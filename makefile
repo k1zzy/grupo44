@@ -7,7 +7,7 @@
 # Compilador e flags
 CC = gcc
 CFLAGS = -Wall -Wextra -Werror -Iinclude -g
-PROTOC = protoc
+PROTOC = protoc-c
 
 # directories
 SRC_DIR = source
@@ -32,7 +32,7 @@ SERVER_BIN = $(BIN_DIR)/list_server
 LIB_LIST = $(LIB_DIR)/liblist.a
 
 # Protocol Buffers
-PROTO_FILE = $(SRC_DIR)/sdmessage.proto
+PROTO_FILE = sdmessage.proto
 PROTO_SRC = $(SRC_DIR)/sdmessage.pb-c.c
 PROTO_HEADER = $(INC_DIR)/sdmessage.pb-c.h
 
