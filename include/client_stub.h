@@ -37,38 +37,38 @@ int rlist_disconnect(struct rlist_t *rlist);
  * O carro é inserido na última posição da lista.
  * Retorna 0 (OK) ou -1 em caso de erro.
  */
-int rlist_add(struct list_t *list, struct data_t *car);
+int rlist_add(struct rlist_t *rlist, struct data_t *car);
 
 /* Remove da lista remota o primeiro carro que corresponda ao modelo indicado.
  * Retorna 0 se encontrou e removeu, 1 se não encontrou, ou -1 em caso de erro.
  */
-int rlist_remove_by_model(struct list_t *list, const char *modelo);
+int rlist_remove_by_model(struct rlist_t *rlist, const char *modelo);
 
 /* Obtém o primeiro carro que corresponda à marca indicada.
  * Retorna ponteiro para os dados ou NULL se não encontrar ou em caso de erro.
  */
-struct data_t *rlist_get_by_marca(struct list_t *list, enum marca_t marca);
+struct data_t *rlist_get_by_marca(struct rlist_t *rlist, enum marca_t marca);
 
 /* Obtém um array de ponteiros para carros de um determinado ano.
  * O último elemento do array é NULL.
  * Retorna o array ou NULL em caso de erro.
  */
-struct data_t **rlist_get_by_year(struct list_t *list, int ano);
+struct data_t **rlist_get_by_year(struct rlist_t *rlist, int ano);
 
 /* Ordena a lista remota de carros por ano de fabrico (crescente).
  * Retorna 0 (OK) ou -1 em caso de erro.
  */
-int rlist_order_by_year(struct list_t *list);
+int rlist_order_by_year(struct rlist_t *rlist);
 
 /* Retorna o número de carros na lista remota ou -1 em caso de erro.
  */
-int rlist_size(struct list_t *list);
+int rlist_size(struct rlist_t *rlist);
 
 /* Constrói um array de strings com os modelos dos carros na lista remota.
  * O último elemento do array é NULL.
  * Retorna o array ou NULL em caso de erro.
  */
-char **rlist_get_model_list(struct list_t *list);
+char **rlist_get_model_list(struct rlist_t *rlist);
 
 /* Liberta a memória ocupada pelo array de modelos.
  * Retorna 0 (OK) ou -1 em caso de erro.
