@@ -40,7 +40,8 @@ int network_connect(struct rlist_t *rlist) {
 
     return 0; // sucesso
 }
-// TODO placeholder do copilot, nao sei sequer se está perto de estar bem
+
+// FALTA AQUI A VERIFICAÇÃO DO TAMANHO DA MENSAGEM RECEBIDA DO PROTOCOLO
 MessageT *network_send_receive(struct rlist_t *rlist, MessageT *msg) {
     if (!rlist || !msg) {
         return NULL; // rlist ou msg inválidos
@@ -58,6 +59,13 @@ MessageT *network_send_receive(struct rlist_t *rlist, MessageT *msg) {
     //Serializate the message
     message_t__pack(msg, buffer);
 
+    // Send the size of the serialized message to the server
+    uint16_t network_msg_size = htons((uint16_t)msg_size);
+    if (write_all(socket, &network_msg_size, sizeof(network_msg_size)) == -1) {
+        free(buffer);
+        return NULL;
+    }
+
     //Send the serialized message to the server
     if( write_all(socket, buffer, msg_size) == -1){
         free(buffer);
@@ -67,8 +75,15 @@ MessageT *network_send_receive(struct rlist_t *rlist, MessageT *msg) {
 
     printf("Server waiting for the response\n");
 
+    // Receive the size of the response from the server
+    uint16_t response_size_network;
+    if (read_all(socket, &response_size_network, sizeof(response_size_network)) == -1) {
+        return NULL;
+    }
+    uint16_t response_size = ntohs(response_size_network);
+
     // Allocate memory for response length
-    uint8_t *response_buffer = malloc(msg_size);
+    uint8_t *response_buffer = malloc(response_size);
     if (!response_buffer) {
         return NULL;
     }
@@ -78,45 +93,15 @@ MessageT *network_send_receive(struct rlist_t *rlist, MessageT *msg) {
         return NULL; 
     }
 
-    
+    MessageT *response_msg = message_t__unpack(socket, msg_size, response_buffer);
+    free(response_buffer); // free response buffer after de-serialization
+
+    // Close the socket
+    close(socket);
+
+    return response_msg; // return the de-serialized message
 
 
-
-    
-
-    // if (!rlist || !msg) {
-    //     return NULL; // rlist ou msg inválidos
-    // }
-
-    // // Serializar a mensagem
-    // size_t msg_size = message_t__get_packed_size(msg);
-    // uint8_t *buffer = malloc(msg_size);
-    // if (!buffer) {
-    //     return NULL; // erro ao alocar memória
-    // }
-    // message_t__pack(msg, buffer);
-
-    // // Enviar a mensagem serializada para o servidor
-    // ssize_t bytes_sent = send(rlist->sockfd, buffer, msg_size, 0);
-    // free(buffer); // libertar o buffer após o envio
-    // if (bytes_sent != msg_size) {
-    //     return NULL; // erro ao enviar a mensagem
-    // }
-
-    // // Esperar a resposta do servidor
-    // uint8_t response_buffer[4096]; // buffer para a resposta
-    // ssize_t bytes_received = recv(rlist->sockfd, response_buffer, sizeof(response_buffer), 0);
-    // if (bytes_received <= 0) {
-    //     return NULL; // erro ao receber a resposta
-    // }
-
-    // // De-serializar a mensagem de resposta
-    // MessageT *response_msg = message_t__unpack(NULL, bytes_received, response_buffer);
-    // if (!response_msg) {
-    //     return NULL; // erro ao de-serializar a mensagem
-    // }
-
-    // return response_msg; // retornar a mensagem de-serializada
 }
 
 int network_close(struct rlist_t *rlist) {

@@ -6,7 +6,8 @@
         "stdlib.h": "c",
         "client_stub-private.h": "c",
         "stdio.h": "c",
-        "inet.h": "c"
+        "inet.h": "c",
+        "iosfwd": "c"
     },
     "C_Cpp.errorSquiggles": "enabled"
 }
