@@ -1,6 +1,12 @@
 {
     "files.associations": {
         "sdmessage.pb-c.h": "c",
-        "unistd.h": "c"
-    }
+        "unistd.h": "c",
+        "client_stub.h": "c",
+        "stdlib.h": "c",
+        "client_stub-private.h": "c",
+        "stdio.h": "c",
+        "inet.h": "c"
+    },
+    "C_Cpp.errorSquiggles": "enabled"
 }

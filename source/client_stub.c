@@ -1,5 +1,5 @@
-#include "client_stub.h"
-#include "client_stub-private.h"
+#include "../include/client_stub.h"
+#include "../include/client_stub-private.h"
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
