@@ -1,4 +1,4 @@
-#include "network_server.h"
+#include "../include/network_server.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -6,6 +6,7 @@
 #include <arpa/inet.h>
 #include <errno.h>
 #include <stdint.h>
+
 
 #include "../include/sdmessage.pb-c.h"
 #include "../include/list_skel.h"

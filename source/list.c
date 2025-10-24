@@ -4,11 +4,11 @@
 * Autores: Rodrigo Afonso (61839), Guilherme Ramos (61840), Miguel Ferreira (61879)
 */
 
+#include "../include/list.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-#include "../include/list.h"
 #include "../include/list-private.h"
 #include "../include/data.h"
 

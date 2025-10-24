@@ -1,11 +1,12 @@
-#include "list_skel.h"
+#include "../include/list_skel.h"
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
-#include "sdmessage.pb-c.h"
-#include "list.h"
-#include "data.h"
-#include "data-private.h"
+#include "../include/sdmessage.pb-c.h"
+#include "../include/list.h"
+#include "../include/data.h"
+#include "../include/data-private.h"
+
 
 int list_skel_init() {
     struct list_t *list = list_create();

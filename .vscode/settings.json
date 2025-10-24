@@ -7,7 +7,9 @@
         "client_stub-private.h": "c",
         "stdio.h": "c",
         "inet.h": "c",
-        "iosfwd": "c"
+        "iosfwd": "c",
+        "data-private.h": "c",
+        "list_skel.h": "c"
     },
     "C_Cpp.errorSquiggles": "enabled"
 }
