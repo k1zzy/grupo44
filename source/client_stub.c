@@ -215,6 +215,9 @@ int rlist_free_model_list(char **models) {
     if (!models) {
         return -1; // models inválido
     }
-    // TODO implementar a libertação da lista de modelos
+    for (size_t i = 0; models[i] != NULL; ++i) {
+        free(models[i]); // libertar cada string individualmente
+    }
+    free(models); // libertar a lista de strings
     return 0;
 }
