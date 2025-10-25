@@ -7,86 +7,103 @@
 #include <errno.h>
 #include <stdint.h>
 
-
 #include "../include/sdmessage.pb-c.h"
 #include "../include/list_skel.h"
-#include "../include/message-private.h" /* declara read_all / write_all */
+#include "../include/message-private.h"
+
 
 static volatile int server_shutdown_requested = 0;
+// TODO nao se se é preciso
+int g_listen_fd = -1;  // variavel global do listening socket
 
 int network_server_init(short port) {
+    // criar o socket TCP
     int listening_socket = socket(AF_INET, SOCK_STREAM, 0);
     if (listening_socket < 0) {
-        perror("socket");
         return -1;
     }
 
+    // utiliza SO_REUSEADDR como pedido
     int opt = 1;
     if (setsockopt(listening_socket, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) < 0) {
-        perror("setsockopt");
+        perror("Error in setsockopt");
         close(listening_socket);
         return -1;
     }
 
+    // endereço do servidor onde a socket irá ouvir
     struct sockaddr_in server_addr;
     memset(&server_addr, 0, sizeof(server_addr));
-    server_addr.sin_family = AF_INET;
-    server_addr.sin_addr.s_addr = INADDR_ANY;
+    server_addr.sin_family = AF_INET; // ipv4
+    server_addr.sin_addr.s_addr = htonl(INADDR_ANY);
     server_addr.sin_port = htons(port);
 
+    // associar a socket ao porto
     if (bind(listening_socket, (struct sockaddr *)&server_addr, sizeof(server_addr)) < 0) {
-        perror("bind");
+        perror("Error in bind");
         close(listening_socket);
         return -1;
     }
 
-    if (listen(listening_socket, 5) < 0) {
-        perror("listen");
+    // colocar a socket em modo de escuta
+    if (listen(listening_socket, 0) < 0) { // TODO backlog = 0 é muito pequeno
+        perror("Error in listen");
         close(listening_socket);
         return -1;
     }
 
+    g_listen_fd = listening_socket; // TODO talvez nao seja preciso
     return listening_socket;
 }
 
-/* Lê uma MessageT do cliente usando o protocolo: uint16_t (network order) + payload protobuf */
 MessageT *network_receive(int client_socket) {
+    // ler (2 bytes) qual é o tamanho da mensagem (uint16_t)
     uint16_t netlen;
-    if (read_all(client_socket, &netlen, sizeof(netlen)) != (int)sizeof(netlen)) {
+    if (read_all(client_socket, &netlen, 2) == -1) {
         return NULL; /* erro ou cliente fechou */
     }
-    uint16_t len = ntohs(netlen);
-    if (len == 0) return NULL;
 
+    // converter para host order
+    uint16_t len = ntohs(netlen);
+    
+    // agora que ja sabemos o tamanho, alocar o buffer e
     uint8_t *buf = malloc(len);
     if (!buf) return NULL;
 
-    if (read_all(client_socket, buf, (int)len) != (int)len) {
+    // lê a mensagem
+    if (read_all(client_socket, buf, (int)len) == -1) {
         free(buf);
         return NULL;
     }
 
+    // des-serializar a mensagem
     MessageT *msg = message_t__unpack(NULL, len, buf);
     free(buf);
-    return msg; /* pode ser NULL se unpack falhar */
+    return msg; 
 }
 
-/* Envia uma MessageT para o cliente com o mesmo protocolo (uint16_t + payload) */
 int network_send(int client_socket, MessageT *msg) {
-    if (!msg) return -1;
+    if (!msg) { 
+        return -1;
+    }
+    
+    size_t packed = message_t__get_packed_size(msg); // tamanho da mensagem seriazliada
+    if (packed > UINT16_MAX) return -1; // não pode ultrapassar o 65535 bytes de tamanho
 
-    size_t packed = message_t__get_packed_size(msg);
-    if (packed > UINT16_MAX) return -1;
+    uint8_t *buf = malloc(packed); // aloca memória para a mensagem serializada
+    if (!buf) {
+        return -1;
+    }
+    size_t written = message_t__pack(msg, buf); // buffer da mensagem serializada
 
-    uint8_t *buf = malloc(packed);
-    if (!buf) return -1;
-    size_t written = message_t__pack(msg, buf);
-
-    uint16_t netlen = htons((uint16_t)written);
+    uint16_t netlen = htons((uint16_t)written); // converte o tamanho para network order
+    
+    // envia o tamanho da mensagem
     if (write_all(client_socket, &netlen, sizeof(netlen)) != (int)sizeof(netlen)) {
         free(buf);
         return -1;
     }
+    // envia a mensagem
     if (write_all(client_socket, buf, (int)written) != (int)written) {
         free(buf);
         return -1;
@@ -100,27 +117,33 @@ int network_main_loop(int listening_socket, struct list_t *list) {
     if (listening_socket < 0) return -1;
 
     while (!server_shutdown_requested) {
-        struct sockaddr_in client_addr;
-        socklen_t addrlen = sizeof(client_addr);
-        int client_sock = accept(listening_socket, (struct sockaddr *)&client_addr, &addrlen);
+        struct sockaddr_in client_addr; // estrutura onde o endereço do socket vai ser armazenado
+        socklen_t addrlen = sizeof(client_addr); // tamanho da estrutura do endereço
+        int client_sock = accept(listening_socket, (struct sockaddr *)&client_addr, &addrlen); // endereço do socket do cliente
+        // caso haja um erro com a nova ligação ao socket
         if (client_sock < 0) {
-            if (server_shutdown_requested) break;
+            if (server_shutdown_requested) {
+                break;
+            }
             perror("accept");
             continue;
         }
-
+        
+        // enquanto o server não for desligado
         while (!server_shutdown_requested) {
-            MessageT *req = network_receive(client_sock);
-            if (!req) break; /* cliente fechou ou erro */
+            MessageT *req = network_receive(client_sock); // receber o pedido do client
+            if (!req) {
+                break; // client fechou ou erro
+            }
 
             /* invoke processa a mesma MessageT e preenche o resultado */
             if (invoke(req, list) < 0) {
-                req->c_type = MESSAGE_T__C_TYPE__CT_RESULT;
-                req->result = -1;
+                // req->c_type = MESSAGE_T__C_TYPE__CT_RESULT;
+                // req->result = -1; TODO
             }
 
             if (network_send(client_sock, req) != 0) {
-                message_t__free_unpacked(req, NULL);
+                message_t__free_unpacked(req, NULL); // TODO nao sei se e para dar unpack mesmo em caso de erro
                 break;
             }
 
@@ -133,14 +156,16 @@ int network_main_loop(int listening_socket, struct list_t *list) {
     return 0;
 }
 
+// TODO logo verifico mais a fundo - não há memória a ser alocada no init
 int network_server_close(int socket_fd) {
     if (socket_fd >= 0) {
-        close(socket_fd);
+        close(socket_fd); // fecha o socket
         return 0;
     }
     return -1;
 }
 
+// TODO logo verifico mais a fundo
 void network_server_request_shutdown(void) {
     server_shutdown_requested = 1;
 }

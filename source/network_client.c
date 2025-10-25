@@ -93,12 +93,10 @@ MessageT *network_send_receive(struct rlist_t *rlist, MessageT *msg) {
         return NULL; 
     }
 
-    MessageT *response_msg = message_t__unpack(NULL, msg_size, response_buffer); // use default allocator ??
+    MessageT *response_msg = message_t__unpack(NULL, msg_size, response_buffer); 
     free(response_buffer); // free response buffer after de-serialization
 
-
     return response_msg; // return the de-serialized message
-
 
 }
 

@@ -1,10 +1,11 @@
 #include "../include/client_stub.h"
 #include "../include/client_stub-private.h"
+#include "../include/network_client.h"
+#include "sdmessage.pb-c.h"
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
 
-// TODO nao sei se a socket deve ser criada aqui ou noutro sitio
 struct rlist_t *rlist_connect(char *address_port) {
     struct rlist_t *rlist = NULL;
     rlist = malloc(sizeof(struct rlist_t));
@@ -28,7 +29,12 @@ struct rlist_t *rlist_connect(char *address_port) {
     // podemos utilizar atoi porque este para quando encontrar um caracter que nao seja número
     // neste caso, o terminator de string '\0'
     rlist->server_port = atoi(pontos_ptr + 1); // converte a parte do port para int
-    rlist->sockfd = -1; // placeholder, socket ainda nao criada
+    // estabelece ligação com o servidor (dando um socket à rlist)
+    if (network_connect(rlist) < 0) { 
+        free(rlist->server_address);
+        free(rlist);
+        return NULL;
+    }
     return rlist;
 }
 
@@ -48,14 +54,20 @@ int rlist_disconnect(struct rlist_t *rlist) {
 }
 
 int rlist_add(struct rlist_t *rlist, struct data_t *car) {
-    if (!rlist || !car) return -1;
+    if (!rlist || !car) {
+        return -1;
+    }
 
     MessageT msg = MESSAGE_T__INIT;
     msg.opcode = MESSAGE_T__OPCODE__OP_ADD;
     msg.c_type = MESSAGE_T__C_TYPE__CT_DATA;
 
     Data *pd = malloc(sizeof(Data));
-    if (!pd) return -1;
+
+    if (!pd) {
+        return -1;
+    }
+
     data__init(pd);
     pd->ano = car->ano;
     pd->preco = car->preco;
@@ -67,11 +79,17 @@ int rlist_add(struct rlist_t *rlist, struct data_t *car) {
 
     MessageT *resp = network_send_receive(rlist, &msg);
 
-    if (pd->modelo) free(pd->modelo);
+    if (pd->modelo) {
+        free(pd->modelo);
+    }
+
     free(pd);
 
-    if (!resp) return -1;
-    int result = (resp->c_type == MESSAGE_T__C_TYPE__CT_RESULT) ? resp->result : -1;
+    if (!resp) {
+        return -1;
+    }
+
+    int result = (resp->c_type == MESSAGE_T__C_TYPE__CT_NONE) ? resp->result : -1;
     message_t__free_unpacked(resp, NULL);
     return (result == 0) ? 0 : -1;
 }
@@ -130,7 +148,7 @@ struct data_t **rlist_get_by_year(struct rlist_t *rlist, int ano) {
     if (!rlist) return NULL;
 
     MessageT msg = MESSAGE_T__INIT;
-    msg.opcode = MESSAGE_T__OPCODE__OP_GETLISTBYYEAR;
+    msg.opcode = MESSAGE_T__OPCODE__OP_GETLISTBYTEAR;
     msg.c_type = MESSAGE_T__C_TYPE__CT_YEAR;
     msg.result = (int32_t)ano;
 

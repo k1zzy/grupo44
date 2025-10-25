@@ -52,8 +52,8 @@ int invoke(MessageT *msg, struct list_t *list) {
             msg->c_type = MESSAGE_T__C_TYPE__CT_NONE;
             return -1;
         }
-        msg->opcode = MESSAGE_T__OPCODE__OP_ADD + 1
-        msg->c_type = MESSAGE_T__C_TYPE__CT_RESULT;
+        msg->opcode = MESSAGE_T__OPCODE__OP_ADD + 1;
+        msg->c_type = MESSAGE_T__C_TYPE__CT_NONE;
         msg->result = r;
         break;
     }
@@ -71,7 +71,7 @@ int invoke(MessageT *msg, struct list_t *list) {
             msg->c_type = MESSAGE_T__C_TYPE__CT_NONE;
             return -1;
         }
-        msg->opcode = MESSAGE_T__OPCODE__OP_DEL + 1
+        msg->opcode = MESSAGE_T__OPCODE__OP_DEL + 1;
         msg->c_type = MESSAGE_T__C_TYPE__CT_RESULT;
         msg->result = r;
         break;
@@ -98,13 +98,13 @@ int invoke(MessageT *msg, struct list_t *list) {
         pd->modelo = found->modelo ? strdup(found->modelo) : NULL;
         pd->combustivel = (Combustivel)found->combustivel;
 
-        msg->opcode = MESSAGE_T__OPCODE__OP_GET + 1
+        msg->opcode = MESSAGE_T__OPCODE__OP_GET + 1;
         msg->c_type = MESSAGE_T__C_TYPE__CT_DATA;
         msg->data = pd;
         break;
     }
 
-    case MESSAGE_T__OPCODE__OP_GETLISTBYYEAR: {
+    case MESSAGE_T__OPCODE__OP_GETLISTBYTEAR: {
         int year = msg->result;
         struct data_t **arr = list_get_by_year(list, year);
         if (!arr) {
@@ -149,7 +149,7 @@ int invoke(MessageT *msg, struct list_t *list) {
             pd->combustivel = (Combustivel)arr[i]->combustivel;
             msg->cars[i] = pd;
         }
-        msg->opcode = MESSAGE_T__OPCODE__OP_GETLISTBYYEAR + 1;
+        msg->opcode = MESSAGE_T__OPCODE__OP_GETLISTBYTEAR + 1;
         msg->c_type = MESSAGE_T__C_TYPE__CT_LIST;
         break;
     }
@@ -161,7 +161,7 @@ int invoke(MessageT *msg, struct list_t *list) {
             msg->c_type = MESSAGE_T__C_TYPE__CT_NONE;
             return -1;
         }
-        msg->opcode = MESSAGE_T__OPCODE__OP_ORDER + 1
+        msg->opcode = MESSAGE_T__OPCODE__OP_ORDER + 1;
         msg->c_type = MESSAGE_T__C_TYPE__CT_RESULT;
         msg->result = r;
         break;
@@ -174,7 +174,7 @@ int invoke(MessageT *msg, struct list_t *list) {
             msg->c_type = MESSAGE_T__C_TYPE__CT_NONE;
             return -1;
         }
-        msg->opcode = MESSAGE_T__OPCODE__OP_SIZE + 1
+        msg->opcode = MESSAGE_T__OPCODE__OP_SIZE + 1;
         msg->c_type = MESSAGE_T__C_TYPE__CT_RESULT;
         msg->result = r;
         break;
@@ -208,7 +208,7 @@ int invoke(MessageT *msg, struct list_t *list) {
                 return -1;
             }
         }
-        msg->opcode = MESSAGE_T__OPCODE__OP_GETMODELS + 1
+        msg->opcode = MESSAGE_T__OPCODE__OP_GETMODELS + 1;
         msg->c_type = MESSAGE_T__C_TYPE__CT_LIST;
         break;
     }
