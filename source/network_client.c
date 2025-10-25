@@ -41,7 +41,7 @@ int network_connect(struct rlist_t *rlist) {
     return 0; // sucesso
 }
 
-// FALTA AQUI A VERIFICAÇÃO DO TAMANHO DA MENSAGEM RECEBIDA DO PROTOCOLO
+
 MessageT *network_send_receive(struct rlist_t *rlist, MessageT *msg) {
     if (!rlist || !msg) {
         return NULL; // rlist ou msg inválidos
@@ -88,16 +88,14 @@ MessageT *network_send_receive(struct rlist_t *rlist, MessageT *msg) {
         return NULL;
     }
     //Receive the response from the server
-    if( read_all(socket, response_buffer, msg_size) == -1){
+    if( read_all(socket, response_buffer, response_size) == -1){
         free(response_buffer); // if there's an error in reading the message, free the buffer
         return NULL; 
     }
 
-    MessageT *response_msg = message_t__unpack(socket, msg_size, response_buffer);
+    MessageT *response_msg = message_t__unpack(NULL, msg_size, response_buffer); // use default allocator ??
     free(response_buffer); // free response buffer after de-serialization
 
-    // Close the socket
-    close(socket);
 
     return response_msg; // return the de-serialized message
 
