@@ -74,8 +74,6 @@ MessageT *network_send_receive(struct rlist_t *rlist, MessageT *msg) {
     }
     free(buffer); // libera o buffer após o envio
 
-    printf("Server waiting for the response\n");
-
     // recebe o tamanho da resposta do servidor
     uint16_t response_size_network;
     if (read_all(socket, &response_size_network, sizeof(response_size_network)) == -1) {

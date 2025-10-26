@@ -1,0 +1,21 @@
+Projeto: Sistemas Distribuídos 2025/2026
+ Grupo 44
+ Autores: Rodrigo Afonso (61839), Guilherme Ramos (61840), Miguel Ferreira (61879)
+ 
+O makefile contém os seguintes comandos:
+ 
+- make all,
+- make liblist,
+- make list_client,
+- make list_server,
+- make clean
+
+Ambos o list_client e o list_server são compatíveis com os binários fornecidos nos ficheiros de suporte.
+
+O cliente ao adicionar um carro tem certas limitações, apenas é permitido:
+
+- o ano entre 1886 e 2100,
+- a marca entre 0 e 4,
+- o combustivel entre 0 e 3
+
+Foi verificado no valgrind ambos os binários e não existe memory leaks.

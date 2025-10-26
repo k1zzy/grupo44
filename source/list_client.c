@@ -64,20 +64,20 @@ void processa_comando(struct rlist_t *rlist, char *linha) {
         int combustivel = atoi(combustivel_str);
 
         // verificações
-        if(ano < 1886 || ano > 2024){
-            printf("Erro: ano deve ser entre 1886 e 2024.\n");
+        if(ano < 1886 || ano > 2100){
+            printf("Erro: ano deve ser entre 1886 e 2100.\n");
             return;
         }
         if(preco < 0){
             printf("Erro: preço deve ser um valor positivo.\n");
             return;
         }
-        if(marca < 1 || marca > 5){
-            printf("Erro: marca deve ser um valor entre 1 e 5.\n");
+        if(marca < 0 || marca > 4){
+            printf("Erro: marca deve ser um valor entre 0 e 4.\n");
             return;
         }
-        if(combustivel < 1 || combustivel > 4){
-            printf("Erro: combustível deve ser um valor entre 1 e 4.\n");
+        if(combustivel < 0 || combustivel > 3){
+            printf("Erro: combustível deve ser um valor entre 0 e 3.\n");
             return;
         }
 
