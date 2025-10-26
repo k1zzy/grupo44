@@ -240,6 +240,9 @@ int invoke(MessageT *msg, struct list_t *list) {
             
             Data *pd = msg->data;
             
+            printf("[DEBUG] OP_ADD: modelo=%s, ano=%d, preco=%.2f, marca=%d, combustivel=%d\n",
+                   pd->modelo ? pd->modelo : "NULL", pd->ano, pd->preco, pd->marca, pd->combustivel);
+            
             // Duplicar o modelo antes de criar data_t
             char *modelo_copy = strdup(pd->modelo ? pd->modelo : "");
             if (!modelo_copy) {
@@ -250,15 +253,17 @@ int invoke(MessageT *msg, struct list_t *list) {
             }
             
             // Criar struct data_t usando data_create
+            // data_create(int ano, float preco, enum marca_t marca, const char *modelo, enum combustivel_t combustivel)
             struct data_t *car = data_create(
                 pd->ano,
                 pd->preco,
+                (enum marca_t)pd->marca,
                 modelo_copy,
-                pd->combustivel,
-                (double)pd->marca
+                (enum combustivel_t)pd->combustivel
             );
             
             if (!car) {
+                printf("[DEBUG] OP_ADD: Falha ao criar data_t\n");
                 free(modelo_copy);
                 msg->opcode = MESSAGE_T__OPCODE__OP_ERROR;
                 msg->c_type = MESSAGE_T__C_TYPE__CT_NONE;
@@ -266,13 +271,17 @@ int invoke(MessageT *msg, struct list_t *list) {
             }
             
             // Adicionar à lista
-            if (list_add(list, car) != 0) {
+            int add_result = list_add(list, car);
+            printf("[DEBUG] OP_ADD: list_add retornou %d\n", add_result);
+            
+            if (add_result != 0) {
                 msg->opcode = MESSAGE_T__OPCODE__OP_ERROR;
                 msg->c_type = MESSAGE_T__C_TYPE__CT_NONE;
                 data_destroy(car);
             } else {
                 msg->opcode = MESSAGE_T__OPCODE__OP_ADD + 1; // 11
                 msg->c_type = MESSAGE_T__C_TYPE__CT_NONE;
+                printf("[DEBUG] OP_ADD: Carro adicionado com sucesso! Tamanho da lista: %d\n", list_size(list));
             }
             
             free(modelo_copy);
@@ -280,16 +289,25 @@ int invoke(MessageT *msg, struct list_t *list) {
         }
 
         case MESSAGE_T__OPCODE__OP_GET: { // opcode 20
-            if (msg->c_type != MESSAGE_T__C_TYPE__CT_RESULT) {
+            printf("[DEBUG] OP_GET: list=%p, list->size=%d, c_type=%d, result=%d\n", 
+                   (void*)list, list->size, msg->c_type, msg->result);
+            
+            if (msg->c_type != MESSAGE_T__C_TYPE__CT_MARCA) {
+                printf("[DEBUG] OP_GET: c_type incorreto (esperado CT_MARCA=20, recebido=%d)\n", msg->c_type);
                 msg->opcode = MESSAGE_T__OPCODE__OP_ERROR;
                 msg->c_type = MESSAGE_T__C_TYPE__CT_NONE;
                 return 0;
             }
             
             enum marca_t marca = (enum marca_t)msg->result;
+            printf("[DEBUG] OP_GET: Procurando marca=%d\n", marca);
+            
             struct data_t *found = list_get_by_marca(list, marca);
             
+            printf("[DEBUG] OP_GET: list_get_by_marca retornou %p\n", (void*)found);
+            
             if (!found) {
+                printf("[DEBUG] OP_GET: Nenhum carro encontrado\n");
                 msg->opcode = MESSAGE_T__OPCODE__OP_ERROR;
                 msg->c_type = MESSAGE_T__C_TYPE__CT_NONE;
                 return 0;
@@ -318,6 +336,8 @@ int invoke(MessageT *msg, struct list_t *list) {
             }
             
             pd->combustivel = (Combustivel)found->combustivel;
+            
+            printf("[DEBUG] OP_GET: Retornando carro modelo=%s, ano=%d\n", pd->modelo, pd->ano);
             
             msg->opcode = MESSAGE_T__OPCODE__OP_GET + 1; // 21
             msg->c_type = MESSAGE_T__C_TYPE__CT_DATA;
@@ -348,7 +368,12 @@ int invoke(MessageT *msg, struct list_t *list) {
                 return 0;
             }
             
+            printf("[DEBUG] OP_SIZE: list=%p, list->size=%d\n", (void*)list, list->size);
+            
             int size = list_size(list);
+            
+            printf("[DEBUG] OP_SIZE: list_size() retornou %d\n", size);
+            
             msg->opcode = MESSAGE_T__OPCODE__OP_SIZE + 1; // 41
             msg->c_type = MESSAGE_T__C_TYPE__CT_RESULT;
             msg->result = size;
@@ -356,14 +381,20 @@ int invoke(MessageT *msg, struct list_t *list) {
         }
 
         case MESSAGE_T__OPCODE__OP_GETMODELS: { // opcode 50
+            printf("[DEBUG] OP_GETMODELS: list=%p, list->size=%d\n", (void*)list, list->size);
+            
             if (msg->c_type != MESSAGE_T__C_TYPE__CT_NONE) {
+                printf("[DEBUG] OP_GETMODELS: c_type incorreto (%d)\n", msg->c_type);
                 msg->opcode = MESSAGE_T__OPCODE__OP_ERROR;
                 msg->c_type = MESSAGE_T__C_TYPE__CT_NONE;
                 return 0;
             }
             
             char **model_list = list_get_model_list(list);
+            printf("[DEBUG] OP_GETMODELS: list_get_model_list retornou %p\n", (void*)model_list);
+            
             if (!model_list) {
+                printf("[DEBUG] OP_GETMODELS: model_list é NULL\n");
                 msg->opcode = MESSAGE_T__OPCODE__OP_ERROR;
                 msg->c_type = MESSAGE_T__C_TYPE__CT_NONE;
                 return 0;
@@ -377,6 +408,8 @@ int invoke(MessageT *msg, struct list_t *list) {
             while (model_list[count] != NULL) {
                 count++;
             }
+            
+            printf("[DEBUG] OP_GETMODELS: count=%d\n", count);
             
             msg->n_models = count;
             msg->models = malloc(sizeof(char*) * count);
@@ -411,7 +444,11 @@ int invoke(MessageT *msg, struct list_t *list) {
         }
 
         case MESSAGE_T__OPCODE__OP_GETLISTBYTEAR: { // opcode 60
+            printf("[DEBUG] OP_GETLISTBYTEAR: list=%p, list->size=%d, result=%d\n", 
+                   (void*)list, list->size, msg->result);
+            
             if (msg->c_type != MESSAGE_T__C_TYPE__CT_RESULT) {
+                printf("[DEBUG] OP_GETLISTBYTEAR: c_type incorreto (%d)\n", msg->c_type);
                 msg->opcode = MESSAGE_T__OPCODE__OP_ERROR;
                 msg->c_type = MESSAGE_T__C_TYPE__CT_NONE;
                 return 0;
@@ -421,13 +458,18 @@ int invoke(MessageT *msg, struct list_t *list) {
             
             // Se result é -1, ordena e obtém todos; caso contrário, filtra por ano
             if (msg->result == -1) {
+                printf("[DEBUG] OP_GETLISTBYTEAR: Ordenando por ano e obtendo todos\n");
                 list_order_by_year(list);
                 arr = list_get_all(list);
             } else {
+                printf("[DEBUG] OP_GETLISTBYTEAR: Filtrando por ano=%d\n", msg->result);
                 arr = list_get_by_year(list, msg->result);
             }
             
+            printf("[DEBUG] OP_GETLISTBYTEAR: arr=%p\n", (void*)arr);
+            
             if (!arr) {
+                printf("[DEBUG] OP_GETLISTBYTEAR: arr é NULL\n");
                 msg->opcode = MESSAGE_T__OPCODE__OP_ERROR;
                 msg->c_type = MESSAGE_T__C_TYPE__CT_NONE;
                 return 0;

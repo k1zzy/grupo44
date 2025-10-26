@@ -14,8 +14,8 @@ void sig_term_handler(int signum) {
 int main(int argc, char *argv[]) {
     // verificar argumentos
     if (argc != 2) {
-        printf("Invalid arguments!");
-        printf("Usage: list-server <port>");
+        printf("Invalid arguments!\n");
+        printf("Usage: list-server <port>\n");
         return -1;
     }
     
@@ -24,7 +24,7 @@ int main(int argc, char *argv[]) {
     
     // se a porta for inválida
     if (port <= 1023) {
-        printf("Bad port number");
+        printf("Bad port number\n");
         return -1;
     }
     
@@ -42,14 +42,14 @@ int main(int argc, char *argv[]) {
     // inicia o servidor de rede
     int listening_socket = network_server_init(port);
     if (listening_socket == -1) {
-        printf("Error initializing network");
+        printf("Error initializing network \n");
         return -1;
     }
     
     // abre a lista
     struct list_t *list = list_skel_init();
     if (!list) {
-        printf("Error initializing list");
+        printf("Error initializing list \n");
         network_server_close(listening_socket);
         return -1;
     }

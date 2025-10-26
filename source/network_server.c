@@ -14,8 +14,8 @@
 
 
 static volatile int server_shutdown_requested = 0;
-// TODO nao se se é preciso
-int g_listen_fd = -1;  // variavel global do listening socket
+static int g_listen_fd = -1;   // Socket de listening global
+static int g_conn_fd = -1;      // Socket de conexão atual global
 
 int network_server_init(short port) {
     // criar o socket TCP
@@ -54,6 +54,7 @@ int network_server_init(short port) {
     }
 
     g_listen_fd = listening_socket; // TODO talvez nao seja preciso
+    printf("Server listening on port %d\n", port);
     return listening_socket;
 }
 
@@ -89,7 +90,9 @@ int network_send(int client_socket, MessageT *msg) {
     }
     
     size_t packed = message_t__get_packed_size(msg); // tamanho da mensagem seriazliada
-    if (packed > UINT16_MAX) return -1; // não pode ultrapassar o 65535 bytes de tamanho
+    if (packed > UINT16_MAX) {
+        return -1; // não pode ultrapassar o 65535 bytes de tamanho
+    }
 
     uint8_t *buf = malloc(packed); // aloca memória para a mensagem serializada
     if (!buf) {
@@ -115,7 +118,9 @@ int network_send(int client_socket, MessageT *msg) {
 }
 
 int network_main_loop(int listening_socket, struct list_t *list) {
-    if (listening_socket < 0) return -1;
+    if (listening_socket < 0) {
+        return -1;
+    }
 
     while (!server_shutdown_requested) {
         struct sockaddr_in client_addr; // estrutura onde o endereço do socket vai ser armazenado
@@ -129,7 +134,11 @@ int network_main_loop(int listening_socket, struct list_t *list) {
             perror("accept");
             continue;
         }
+
+        printf("Utilizador conectado\n");
         
+        g_conn_fd = client_sock; // Guardar socket do cliente globalmente
+
         // enquanto o server não for desligado
         while (!server_shutdown_requested) {
             MessageT *req = network_receive(client_sock); // receber o pedido do client
@@ -137,11 +146,15 @@ int network_main_loop(int listening_socket, struct list_t *list) {
                 break; // client fechou ou erro
             }
 
+            printf("[DEBUG] Antes invoke: list=%p, opcode=%d\n", (void*)list, req->opcode);
+            
             /* invoke processa a mesma MessageT e preenche o resultado */
             if (invoke(req, list) < 0) {
                 // req->c_type = MESSAGE_T__C_TYPE__CT_RESULT;
                 // req->result = -1; TODO
             }
+            
+            printf("[DEBUG] Depois invoke: list=%p, list->size=%d\n", (void*)list, list->size);
 
             if (network_send(client_sock, req) != 0) {
                 message_t__free_unpacked(req, NULL); // TODO nao sei se e para dar unpack mesmo em caso de erro
@@ -152,6 +165,8 @@ int network_main_loop(int listening_socket, struct list_t *list) {
         }
 
         close(client_sock);
+        printf("Utilizador desconectado\n");
+        g_conn_fd = -1; // Limpar socket do cliente
     }
 
     return 0;
@@ -168,5 +183,18 @@ int network_server_close(int socket_fd) {
 
 // TODO logo verifico mais a fundo
 void network_server_request_shutdown(void) {
+    // Sinalizar término
     server_shutdown_requested = 1;
+    
+    // Fechar socket de conexão atual (se existir)
+    if (g_conn_fd >= 0) {
+        close(g_conn_fd);
+        g_conn_fd = -1;
+    }
+    
+    // Fechar socket de listening (desbloqueia accept())
+    if (g_listen_fd >= 0) {
+        close(g_listen_fd);
+        g_listen_fd = -1;
+    }
 }

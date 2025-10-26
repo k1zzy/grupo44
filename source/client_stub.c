@@ -90,9 +90,10 @@ int rlist_add(struct rlist_t *rlist, struct data_t *car) {
         return -1;
     }
 
-    int result = (resp->c_type == MESSAGE_T__C_TYPE__CT_NONE) ? resp->result : -1;
+    // Verificar se a operação foi bem-sucedida (opcode = OP_ADD + 1 = 11)
+    int result = (resp->opcode == MESSAGE_T__OPCODE__OP_ADD + 1) ? 0 : -1;
     message_t__free_unpacked(resp, NULL);
-    return (result == 0) ? 0 : -1;
+    return result;
 }
 
 int rlist_remove_by_model(struct rlist_t *rlist, const char *modelo) {
@@ -192,21 +193,35 @@ int rlist_order_by_year(struct rlist_t *rlist) {
 }
 
 int rlist_size(struct rlist_t *rlist) {
-    if (!rlist) return -1;
+    if (!rlist) {
+        return -1;
+    }
 
     MessageT msg = MESSAGE_T__INIT;
     msg.opcode = MESSAGE_T__OPCODE__OP_SIZE;
     msg.c_type = MESSAGE_T__C_TYPE__CT_NONE;
 
     MessageT *resp = network_send_receive(rlist, &msg);
-    if (!resp) return -1;
+    if (!resp) {
+        printf("[DEBUG CLIENT] rlist_size: resp é NULL\n");
+        return -1;
+    }
+    
+    printf("[DEBUG CLIENT] rlist_size: resp->opcode=%d, resp->c_type=%d, resp->result=%d\n", 
+           resp->opcode, resp->c_type, resp->result);
+    
     int size = (resp->c_type == MESSAGE_T__C_TYPE__CT_RESULT) ? resp->result : -1;
     message_t__free_unpacked(resp, NULL);
+    
+    printf("[DEBUG CLIENT] rlist_size: retornando %d\n", size);
+    
     return size;
 }
 
 char **rlist_get_model_list(struct rlist_t *rlist) {
-    if (!rlist) return NULL;
+    if (!rlist) {
+        return NULL;
+    }
 
     MessageT msg = MESSAGE_T__INIT;
     msg.opcode = MESSAGE_T__OPCODE__OP_GETMODELS;
@@ -216,7 +231,7 @@ char **rlist_get_model_list(struct rlist_t *rlist) {
     if (!resp) return NULL;
 
     char **out = NULL;
-    if (resp->c_type == MESSAGE_T__C_TYPE__CT_LIST && resp->n_models > 0 && resp->models) {
+    if (resp->c_type == MESSAGE_T__C_TYPE__CT_MODEL && resp->n_models > 0 && resp->models) {
         size_t n = resp->n_models;
         out = calloc(n + 1, sizeof(char *));
         if (out) {

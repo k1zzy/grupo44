@@ -77,10 +77,10 @@ int data_replace(struct data_t *data, int ano, float preco, enum marca_t marca, 
 
 char *validate_params(int ano, float preco, enum marca_t marca, const char *modelo, enum combustivel_t combustivel)
 {
-    if (ano <= 1800 || ano >= 2025) {
+    if (ano < 1886 || ano > 2100) { // 1886 = primeiro carro (Benz Patent-Motorwagen)
         return NULL; // ano inválido
     }
-    if (preco <= 0.0f) {
+    if (preco < 0.0f) { // permitir preço 0 (carros oferecidos, etc)
         return NULL; // preço inválido
     }
     if (marca < MARCA_TOYOTA || marca > MARCA_MERCEDES) {

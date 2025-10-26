@@ -223,3 +223,25 @@ int list_free_model_list(char **models){
     free(models);
     return 0;  
 }
+
+
+struct data_t **list_get_all(struct list_t *list){
+    if(list == NULL || list -> size == 0){
+        return NULL; // Error
+    }
+
+    struct data_t **array = malloc((list -> size + 1) * sizeof(struct data_t *));
+    if(array == NULL){
+        return NULL; // Error
+    }
+
+    struct car_t *current = list -> head;
+    int i = 0;
+    while(current != NULL){
+        array[i] = current -> data;
+        i++;
+        current = current -> next;
+    }
+    array[i] = NULL; // Ultima posicao nula
+    return array;
+}
