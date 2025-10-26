@@ -47,7 +47,7 @@ MessageT *network_send_receive(struct rlist_t *rlist, MessageT *msg) {
         return NULL; // rlist ou msg inválidos
     }
 
-    // Get socket from rlist
+    // obter o socket da rlist
     int socket = rlist->sockfd;
 
     size_t msg_size = message_t__get_packed_size(msg);
@@ -56,47 +56,48 @@ MessageT *network_send_receive(struct rlist_t *rlist, MessageT *msg) {
     if (!buffer) {
         return NULL; // erro ao alocar memória
     }
-    //Serializate the message
+    // Serializa a mensagem
     message_t__pack(msg, buffer);
 
-    // Send the size of the serialized message to the server
+    // Envia o tamanho da mensagem serializada para o servidor
     uint16_t network_msg_size = htons((uint16_t)msg_size);
     if (write_all(socket, &network_msg_size, sizeof(network_msg_size)) == -1) {
         free(buffer);
         return NULL;
     }
 
-    //Send the serialized message to the server
-    if( write_all(socket, buffer, msg_size) == -1){
+
+    // Envia a mensagem serializada para o servidor
+    if (write_all(socket, buffer, msg_size) == -1) {
         free(buffer);
         return NULL;
     }
-    free(buffer); // free buffer after sending
+    free(buffer); // libera o buffer após o envio
 
     printf("Server waiting for the response\n");
 
-    // Receive the size of the response from the server
+    // recebe o tamanho da resposta do servidor
     uint16_t response_size_network;
     if (read_all(socket, &response_size_network, sizeof(response_size_network)) == -1) {
         return NULL;
     }
     uint16_t response_size = ntohs(response_size_network);
 
-    // Allocate memory for response length
+    // Aloca memória para o tamanho da resposta
     uint8_t *response_buffer = malloc(response_size);
     if (!response_buffer) {
         return NULL;
     }
-    //Receive the response from the server
-    if( read_all(socket, response_buffer, response_size) == -1){
-        free(response_buffer); // if there's an error in reading the message, free the buffer
-        return NULL; 
+    // Recebe a resposta do servidor
+    if (read_all(socket, response_buffer, response_size) == -1) {
+        free(response_buffer); // se houver um erro ao ler a mensagem, libera o buffer
+        return NULL;
     }
 
-    MessageT *response_msg = message_t__unpack(NULL, response_size, response_buffer); 
-    free(response_buffer); // free response buffer after de-serialization
+    MessageT *response_msg = message_t__unpack(NULL, response_size, response_buffer);
+    free(response_buffer); // libera o buffer de resposta após a deserialização
 
-    return response_msg; // return the de-serialized message
+    return response_msg; // retorna a mensagem deserializada
 
 }
 

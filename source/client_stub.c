@@ -39,7 +39,6 @@ struct rlist_t *rlist_connect(char *address_port) {
     return rlist;
 }
 
-// TODO nao sei se esta bem, depende de onde e como a socket será criada
 int rlist_disconnect(struct rlist_t *rlist) {
     if (!rlist) {
         return -1; // rlist inválida
@@ -53,7 +52,7 @@ int rlist_disconnect(struct rlist_t *rlist) {
     free(rlist); // libertar a estrutura rlist
     return 0;
 }
-
+// adicionar carro
 int rlist_add(struct rlist_t *rlist, struct data_t *car) {
     if (!rlist || !car) {
         return -1;
@@ -63,12 +62,13 @@ int rlist_add(struct rlist_t *rlist, struct data_t *car) {
     msg.opcode = MESSAGE_T__OPCODE__OP_ADD;
     msg.c_type = MESSAGE_T__C_TYPE__CT_DATA;
 
-    Data *pd = malloc(sizeof(Data));
+    Data *pd = malloc(sizeof(Data)); 
 
-    if (!pd) {
+    if (!pd) { // se falhou a alocação de memória
         return -1;
     }
 
+    // preencher a estrutura Data com os dados do carro
     data__init(pd);
     pd->ano = car->ano;
     pd->preco = car->preco;
@@ -78,7 +78,7 @@ int rlist_add(struct rlist_t *rlist, struct data_t *car) {
 
     msg.data = pd;
 
-    MessageT *resp = network_send_receive(rlist, &msg);
+    MessageT *resp = network_send_receive(rlist, &msg); // enviar a mensagem e receber a resposta
 
     if (pd->modelo) {
         free(pd->modelo);
@@ -95,7 +95,7 @@ int rlist_add(struct rlist_t *rlist, struct data_t *car) {
     message_t__free_unpacked(resp, NULL);
     return result;
 }
-
+// remover carro por modelo
 int rlist_remove_by_model(struct rlist_t *rlist, const char *modelo) {
     if (!rlist || !modelo) return -1;
 
@@ -124,7 +124,7 @@ int rlist_remove_by_model(struct rlist_t *rlist, const char *modelo) {
     /* protocolo: 0 = removed, 1 = not found, -1 = error */
     return out;
 }
-
+// obter carro por marca
 struct data_t *rlist_get_by_marca(struct rlist_t *rlist, enum marca_t marca) {
     if (!rlist) return NULL;
 
@@ -145,7 +145,7 @@ struct data_t *rlist_get_by_marca(struct rlist_t *rlist, enum marca_t marca) {
     message_t__free_unpacked(resp, NULL);
     return out;
 }
-
+// obter carros por ano
 struct data_t **rlist_get_by_year(struct rlist_t *rlist, int ano) {
     if (!rlist) return NULL;
 
@@ -177,7 +177,7 @@ struct data_t **rlist_get_by_year(struct rlist_t *rlist, int ano) {
     message_t__free_unpacked(resp, NULL);
     return out;
 }
-
+// ordenar lista por ano
 int rlist_order_by_year(struct rlist_t *rlist) {
     if (!rlist) return -1;
 
@@ -191,7 +191,7 @@ int rlist_order_by_year(struct rlist_t *rlist) {
     message_t__free_unpacked(resp, NULL);
     return (res == 0) ? 0 : -1;
 }
-
+// obter tamanho da lista
 int rlist_size(struct rlist_t *rlist) {
     if (!rlist) {
         return -1;
@@ -211,7 +211,7 @@ int rlist_size(struct rlist_t *rlist) {
         
     return size;
 }
-
+// obter lista de modelos
 char **rlist_get_model_list(struct rlist_t *rlist) {
     if (!rlist) {
         return NULL;
@@ -238,7 +238,7 @@ char **rlist_get_model_list(struct rlist_t *rlist) {
     message_t__free_unpacked(resp, NULL);
     return out;
 }
-
+// libertar lista de modelos
 int rlist_free_model_list(char **models) {
     if (!models) {
         return -1; // models inválido
