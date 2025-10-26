@@ -9,7 +9,8 @@
         "inet.h": "c",
         "iosfwd": "c",
         "data-private.h": "c",
-        "list_skel.h": "c"
+        "list_skel.h": "c",
+        "string.h": "c"
     },
     "C_Cpp.errorSquiggles": "disabled"
 }

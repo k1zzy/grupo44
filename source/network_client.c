@@ -51,7 +51,7 @@ MessageT *network_send_receive(struct rlist_t *rlist, MessageT *msg) {
     int socket = rlist->sockfd;
 
     size_t msg_size = message_t__get_packed_size(msg);
-    u_int16_t *buffer = malloc(msg_size); // 16 bits for short size - 2 bytes É O QUE DIZ NO ENUNCIADO
+    uint8_t *buffer = malloc(msg_size); // 16 bits for short size - 2 bytes É O QUE DIZ NO ENUNCIADO
 
     if (!buffer) {
         return NULL; // erro ao alocar memória

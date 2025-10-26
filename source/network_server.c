@@ -6,6 +6,7 @@
 #include <arpa/inet.h>
 #include <errno.h>
 #include <stdint.h>
+#include <signal.h>
 
 #include "../include/sdmessage.pb-c.h"
 #include "../include/list_skel.h"

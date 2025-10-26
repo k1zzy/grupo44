@@ -5,6 +5,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
 
 struct rlist_t *rlist_connect(char *address_port) {
     struct rlist_t *rlist = NULL;
@@ -149,7 +150,7 @@ struct data_t **rlist_get_by_year(struct rlist_t *rlist, int ano) {
 
     MessageT msg = MESSAGE_T__INIT;
     msg.opcode = MESSAGE_T__OPCODE__OP_GETLISTBYTEAR;
-    msg.c_type = MESSAGE_T__C_TYPE__CT_YEAR;
+    msg.c_type = MESSAGE_T__C_TYPE__CT_RESULT;
     msg.result = (int32_t)ano;
 
     MessageT *resp = network_send_receive(rlist, &msg);
@@ -180,8 +181,8 @@ int rlist_order_by_year(struct rlist_t *rlist) {
     if (!rlist) return -1;
 
     MessageT msg = MESSAGE_T__INIT;
-    msg.opcode = MESSAGE_T__OPCODE__OP_ORDER;
-    msg.c_type = MESSAGE_T__C_TYPE__CT_NONE;
+    msg.opcode = MESSAGE_T__OPCODE__OP_GETLISTBYTEAR;
+    msg.c_type = MESSAGE_T__C_TYPE__CT_RESULT;
 
     MessageT *resp = network_send_receive(rlist, &msg);
     if (!resp) return -1;

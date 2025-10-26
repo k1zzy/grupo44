@@ -8,7 +8,7 @@
 #include "../include/data-private.h"
 
 
-int list_skel_init() {
+struct list_t *list_skel_init() {
     struct list_t *list = list_create();
     if (!list) {
         return NULL;
@@ -72,7 +72,7 @@ int invoke(MessageT *msg, struct list_t *list) {
             return -1;
         }
         msg->opcode = MESSAGE_T__OPCODE__OP_DEL + 1;
-        msg->c_type = MESSAGE_T__C_TYPE__CT_RESULT;
+        msg->c_type = MESSAGE_T__C_TYPE__CT_NONE;
         msg->result = r;
         break;
     }
@@ -99,7 +99,7 @@ int invoke(MessageT *msg, struct list_t *list) {
         pd->combustivel = (Combustivel)found->combustivel;
 
         msg->opcode = MESSAGE_T__OPCODE__OP_GET + 1;
-        msg->c_type = MESSAGE_T__C_TYPE__CT_DATA;
+        msg->c_type = MESSAGE_T__C_TYPE__CT_NONE;
         msg->data = pd;
         break;
     }

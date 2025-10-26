@@ -17,8 +17,8 @@ LIB_DIR = lib
 INC_DIR = include
 
 # src files
-CLIENT_SRCS = $(SRC_DIR)/list_client.c $(SRC_DIR)/client_stub.c $(SRC_DIR)/network_client.c $(SRC_DIR)/sdmessage.pb-c.c
-SERVER_SRCS = $(SRC_DIR)/list_server.c $(SRC_DIR)/network_server.c $(SRC_DIR)/list_skel.c $(SRC_DIR)/sdmessage.pb-c.c
+CLIENT_SRCS = $(SRC_DIR)/list_client.c $(SRC_DIR)/client_stub.c $(SRC_DIR)/network_client.c $(SRC_DIR)/message-private.c $(SRC_DIR)/sdmessage.pb-c.c
+SERVER_SRCS = $(SRC_DIR)/list_server.c $(SRC_DIR)/network_server.c $(SRC_DIR)/list_skel.c $(SRC_DIR)/message-private.c $(SRC_DIR)/sdmessage.pb-c.c
 LIST_SRCS = $(SRC_DIR)/data.c $(SRC_DIR)/list.c
 
 # .o files

@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <signal.h>
 #include "../include/client_stub.h"
 #include "../include/data.h"
 
@@ -14,14 +15,14 @@ void processa_comando(struct rlist_t *rlist, char *linha){
 
     if(strcmp(linha, "add") == 0){
         if(args != 1){
-            printf("Erro: add <data>.\n")
+            printf("Erro: add <data>.\n");
         }
         //TODO
     }
 
     else if(strcmp(linha, "remove") == 0){
         if(args != 1){
-            printf("Erro: remove <model>.\n")
+            printf("Erro: remove <model>.\n");
         }
         else if(rlist_remove_by_model(rlist, argumento) == 0){
             printf("Carro do modelo %s removido com sucesso.\n", argumento);
@@ -33,9 +34,9 @@ void processa_comando(struct rlist_t *rlist, char *linha){
     //TODO é para dar ao user o quê?? o nome de cada carro? Ou todas as informações
     else if(strcmp(linha, "get_by_year") == 0){
         if(args != 1){
-            printf("Erro: get_by_year <year>.\n")
+            printf("Erro: get_by_year <year>.\n");
         }
-        struct data_t **carros = rlist_geet_by_year(rlist, atoi(argumento));
+        struct data_t **carros = rlist_get_by_year(rlist, atoi(argumento));
         if(carros == NULL){
             printf("Erro: Nenhum carro encontrado para o ano %s.\n", argumento);
             return;
@@ -49,21 +50,21 @@ void processa_comando(struct rlist_t *rlist, char *linha){
 
     else if(strcmp(linha, "get_by_marca") == 0){
         if(args != 1){
-            printf("Erro: get_by_marca <marca>.\n")
+            printf("Erro: get_by_marca <marca>.\n");
         }
         //TODO
     }
 
     else if(strcmp(linha, "get_list_by_year") == 0){
         if(args != 1){
-            printf("Erro: get_list_by_year <year>.\n")
+            printf("Erro: get_list_by_year <year>.\n");
         }
         //TODO
     }
     // tamanho da lista do servidor
     else if(strcmp(linha, "size") == 0){
         if(args != 0){
-            printf("Erro: size não recebe argumentos.\n")
+            printf("Erro: size não recebe argumentos.\n");
         }
         int size = rlist_size(rlist);
         printf("Tamanho da lista: %d\n", size);
@@ -71,7 +72,7 @@ void processa_comando(struct rlist_t *rlist, char *linha){
 
     else if(strcmp(linha, "get_model_list") == 0){
         if(args != 0){
-            printf("Erro: get_model_list não recebe argumentos.\n")
+            printf("Erro: get_model_list não recebe argumentos.\n");
         }
         //TODO
     }
@@ -81,12 +82,10 @@ void processa_comando(struct rlist_t *rlist, char *linha){
     }
 }
 
-
-
-
-
-
 int main (int argc, char *argv[]) {
+    // ignorar sinais SIGPIPE
+    signal(SIGPIPE, SIG_IGN);
+    
     if(argc != 2){
         fprintf(stderr, "Erro: Use %s <server> <port>\n", argv[0]);
         fprintf(stderr, "Exemplo: %s localhost:8080\n", argv[0]);
