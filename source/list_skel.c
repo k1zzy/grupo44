@@ -37,9 +37,7 @@ int invoke(MessageT *msg, struct list_t *list) {
                 return 0;
             }
             
-            Data *pd = msg->data;
-            
-                   pd->modelo ? pd->modelo : "NULL", pd->ano, pd->preco, pd->marca, pd->combustivel);
+         Data *pd = msg->data;
             
             // Duplicar o modelo antes de criar data_t
             char *modelo_copy = strdup(pd->modelo ? pd->modelo : "");
@@ -83,8 +81,7 @@ int invoke(MessageT *msg, struct list_t *list) {
             return 0;
         }
 
-        case MESSAGE_T__OPCODE__OP_GET: { // opcode 20
-                   (void*)list, list->size, msg->c_type, msg->result);
+    case MESSAGE_T__OPCODE__OP_GET: { // opcode 20
             
             if (msg->c_type != MESSAGE_T__C_TYPE__CT_MARCA) {
                 msg->opcode = MESSAGE_T__OPCODE__OP_ERROR;
@@ -221,8 +218,7 @@ int invoke(MessageT *msg, struct list_t *list) {
             return 0;
         }
 
-        case MESSAGE_T__OPCODE__OP_GETLISTBYTEAR: { // opcode 60
-                   (void*)list, list->size, msg->result);
+    case MESSAGE_T__OPCODE__OP_GETLISTBYTEAR: { // opcode 60
             
             if (msg->c_type != MESSAGE_T__C_TYPE__CT_RESULT) {
                 msg->opcode = MESSAGE_T__OPCODE__OP_ERROR;
