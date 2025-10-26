@@ -58,13 +58,38 @@ void processa_comando(struct rlist_t *rlist, char *linha) {
             return;
         }
 
+        int ano = atoi(ano_str);
+        float preco = atof(preco_str);
+        int marca = atoi(marca_str);
+        int combustivel = atoi(combustivel_str);
+
+        // verificações
+        if(ano < 1886 || ano > 2024){
+            printf("Erro: ano deve ser entre 1886 e 2024.\n");
+            return;
+        }
+        if(preco < 0){
+            printf("Erro: preço deve ser um valor positivo.\n");
+            return;
+        }
+        if(marca < 1 || marca > 5){
+            printf("Erro: marca deve ser um valor entre 1 e 5.\n");
+            return;
+        }
+        if(combustivel < 1 || combustivel > 4){
+            printf("Erro: combustível deve ser um valor entre 1 e 4.\n");
+            return;
+        }
+
+        // construir o carro
         struct data_t carro;
         carro.modelo = modelo;
-        carro.ano = atoi(ano_str);
-        carro.preco = atof(preco_str);
-        carro.marca = atoi(marca_str);
-        carro.combustivel = atoi(combustivel_str);
-        
+        carro.ano = ano;
+        carro.preco = preco;
+        carro.marca = marca;
+        carro.combustivel = combustivel;
+
+        // adicionar um carro ao servidor
         if(rlist_add(rlist, &carro) == 0){
             printf("Carro adicionado com sucesso.\n");
         }
@@ -72,7 +97,7 @@ void processa_comando(struct rlist_t *rlist, char *linha) {
             printf("Erro: Não foi possivel adicionar o carro.\n");
         }        
     }
-
+    // remover um carro de um modelo dado
     else if(strcmp(comando, "remove") == 0){
         char *modelo = strtok(NULL, delim);
         
@@ -88,10 +113,9 @@ void processa_comando(struct rlist_t *rlist, char *linha) {
             printf("Erro: modelo %s não encontrado ou erro ao remover.\n", modelo);
         }
     }
-
+    // obter carros por ano
     else if(strcmp(comando, "get_by_year") == 0){
         char *ano_str = strtok(NULL, delim);
-        
         if(!ano_str){
             printf("Erro: get_by_year <ano>.\n");
             return;
@@ -104,7 +128,7 @@ void processa_comando(struct rlist_t *rlist, char *linha) {
             printf("Erro: Nenhum carro encontrado para o ano %d.\n", ano);
             return;
         }
-        
+        // imprime os carros encontrados
         for(int i = 0; carros[i] != NULL; i++){
             print_car(carros[i]);
             free(carros[i]->modelo); //libertar memoria alocada para o modelo
@@ -112,7 +136,7 @@ void processa_comando(struct rlist_t *rlist, char *linha) {
         }
         free(carros);
     }
-
+    // obter carro por marca
     else if(strcmp(comando, "get_by_marca") == 0){
         char *marca_str = strtok(NULL, delim);
         
@@ -133,7 +157,7 @@ void processa_comando(struct rlist_t *rlist, char *linha) {
         free(carro->modelo); //libertar memoria alocada para o modelo
         free(carro); //libertar memoria alocada para a struct data_t
     }
-
+    // obter lista ordenada de uma ano específico
     else if(strcmp(comando, "get_list_ordered_by_year") == 0){
         struct data_t **carros = rlist_get_by_year(rlist, -1);
         
@@ -141,7 +165,7 @@ void processa_comando(struct rlist_t *rlist, char *linha) {
             printf("Erro: Nenhum carro encontrado.\n");
             return;
         }
-        
+        // imprime os carros encontrados
         for(int i = 0; carros[i] != NULL; i++){
             print_car(carros[i]);
             free(carros[i]->modelo); //libertar memoria alocada para o modelo
@@ -159,7 +183,7 @@ void processa_comando(struct rlist_t *rlist, char *linha) {
             printf("Tamanho da lista: %d\n", size);
         }
     }
-
+    // obter lista de modelos
     else if(strcmp(comando, "get_model_list") == 0){
         char **modelos = rlist_get_model_list(rlist);
         
@@ -167,14 +191,13 @@ void processa_comando(struct rlist_t *rlist, char *linha) {
             printf("Erro: Nenhum modelo encontrado.\n");
             return;
         }
-        
-        for(int i = 0; modelos[i] != NULL; i++){ 
+        // imprime os modelos encontrados
+        for(int i = 0; modelos[i] != NULL; i++){
             printf("Modelo: %s\n", modelos[i]);
         }
         rlist_free_model_list(modelos); //libertar memoria alocada para a lista de modelos
     }
-
-    // imprime todos os comandos disponíveis
+    // imprime todos os comandos do sistema
     else if(strcmp(comando, "help") == 0){
         printf("Comandos disponíveis: \n");
         printf("  add <modelo> <ano> <preco> <marca:0-4> <combustivel:0-3>\n");
@@ -189,7 +212,7 @@ void processa_comando(struct rlist_t *rlist, char *linha) {
     }
     
     else{
-        printf("Comando inválido. Digite 'help' para ver os comandos disponíveis.\n");
+        printf("Comando inválido. Digite 'help' para ver os comandos disponíveis.\n"); //quando um comando não é reconhecido
     }
 }
 
@@ -235,7 +258,6 @@ int main (int argc, char *argv[]) {
     printf("  quit\n\n");
 
     char linha[1024];
-    
     // loop principal de leitura de comandos
     while(1){
         printf("Command: ");
@@ -246,7 +268,7 @@ int main (int argc, char *argv[]) {
             break;
         }
         
-        // remove o '\n' do final
+        // remove o '\n' do final para facilitar comparações
         linha[strcspn(linha, "\n")] = '\0';
         
         // ignora linhas vazias
