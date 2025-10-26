@@ -21,7 +21,7 @@ int list_skel_destroy(struct list_t *list) {
     return list_destroy(list);
 }
 
-int invoke(MessageT *msg, struct list_t *list) {
+int invokeOLD(MessageT *msg, struct list_t *list) {
     if (!msg || !list) {
         if (msg) {
             msg->opcode = MESSAGE_T__OPCODE__OP_ERROR;
