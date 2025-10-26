@@ -37,9 +37,7 @@ int invoke(MessageT *msg, struct list_t *list) {
                 return 0;
             }
             
-            Data *pd = msg->data;
-            
-                   pd->modelo ? pd->modelo : "NULL", pd->ano, pd->preco, pd->marca, pd->combustivel);
+         Data *pd = msg->data;
             
             // Duplicar o modelo antes de criar data_t
             char *modelo_copy = strdup(pd->modelo ? pd->modelo : "");
