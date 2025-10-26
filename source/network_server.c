@@ -53,7 +53,7 @@ int network_server_init(short port) {
         return -1;
     }
 
-    g_listen_fd = listening_socket; // TODO talvez nao seja preciso
+    g_listen_fd = listening_socket; 
     printf("Server listening on port %d\n", port);
     return listening_socket;
 }
@@ -68,7 +68,7 @@ MessageT *network_receive(int client_socket) {
     // converter para host order
     uint16_t len = ntohs(netlen);
     
-    // agora que ja sabemos o tamanho, alocar o buffer e
+    // agora que ja sabemos o tamanho, alocar o buffer 
     uint8_t *buf = malloc(len);
     if (!buf) return NULL;
 
@@ -146,7 +146,7 @@ int network_main_loop(int listening_socket, struct list_t *list) {
                 break; // client fechou ou erro
             }
 
-            
+            //TODO
             /* invoke processa a mesma MessageT e preenche o resultado */
             if (invoke(req, list) < 0) {
                 // req->c_type = MESSAGE_T__C_TYPE__CT_RESULT;
@@ -155,7 +155,7 @@ int network_main_loop(int listening_socket, struct list_t *list) {
             
 
             if (network_send(client_sock, req) != 0) {
-                message_t__free_unpacked(req, NULL); // TODO nao sei se e para dar unpack mesmo em caso de erro
+                message_t__free_unpacked(req, NULL); 
                 break;
             }
 

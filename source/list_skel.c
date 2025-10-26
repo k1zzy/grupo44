@@ -30,7 +30,7 @@ int invoke(MessageT *msg, struct list_t *list) {
     unsigned int opcode = msg->opcode;
 
     switch (opcode) {
-        case MESSAGE_T__OPCODE__OP_ADD: { // opcode 10
+        case MESSAGE_T__OPCODE__OP_ADD: { 
             if (msg->c_type != MESSAGE_T__C_TYPE__CT_DATA || !msg->data) {
                 msg->opcode = MESSAGE_T__OPCODE__OP_ERROR;
                 msg->c_type = MESSAGE_T__C_TYPE__CT_NONE;
@@ -50,8 +50,6 @@ int invoke(MessageT *msg, struct list_t *list) {
                 return 0;
             }
             
-            // Criar struct data_t usando data_create
-            // data_create(int ano, float preco, enum marca_t marca, const char *modelo, enum combustivel_t combustivel)
             struct data_t *car = data_create(
                 pd->ano,
                 pd->preco,
@@ -75,7 +73,7 @@ int invoke(MessageT *msg, struct list_t *list) {
                 msg->c_type = MESSAGE_T__C_TYPE__CT_NONE;
                 data_destroy(car);
             } else {
-                msg->opcode = MESSAGE_T__OPCODE__OP_ADD + 1; // 11
+                msg->opcode = MESSAGE_T__OPCODE__OP_ADD + 1; 
                 msg->c_type = MESSAGE_T__C_TYPE__CT_NONE;
             }
             
@@ -83,7 +81,7 @@ int invoke(MessageT *msg, struct list_t *list) {
             return 0;
         }
 
-        case MESSAGE_T__OPCODE__OP_GET: { // opcode 20
+        case MESSAGE_T__OPCODE__OP_GET: { 
                    (void*)list, list->size, msg->c_type, msg->result);
             
             if (msg->c_type != MESSAGE_T__C_TYPE__CT_MARCA) {
@@ -126,13 +124,13 @@ int invoke(MessageT *msg, struct list_t *list) {
             
             pd->combustivel = (Combustivel)found->combustivel;
                         
-            msg->opcode = MESSAGE_T__OPCODE__OP_GET + 1; // 21
+            msg->opcode = MESSAGE_T__OPCODE__OP_GET + 1; 
             msg->c_type = MESSAGE_T__C_TYPE__CT_DATA;
             msg->data = pd;
             return 0;
         }
 
-        case MESSAGE_T__OPCODE__OP_DEL: { // opcode 30
+        case MESSAGE_T__OPCODE__OP_DEL: { 
             if (msg->c_type != MESSAGE_T__C_TYPE__CT_MODEL || !msg->models) {
                 msg->opcode = MESSAGE_T__OPCODE__OP_ERROR;
                 msg->c_type = MESSAGE_T__C_TYPE__CT_NONE;
@@ -142,13 +140,13 @@ int invoke(MessageT *msg, struct list_t *list) {
             const char *model = msg->models[0];
             int result = list_remove_by_model(list, model);
             
-            msg->opcode = MESSAGE_T__OPCODE__OP_DEL + 1; // 31
+            msg->opcode = MESSAGE_T__OPCODE__OP_DEL + 1; 
             msg->c_type = MESSAGE_T__C_TYPE__CT_RESULT;
             msg->result = result;
             return 0;
         }
 
-        case MESSAGE_T__OPCODE__OP_SIZE: { // opcode 40
+        case MESSAGE_T__OPCODE__OP_SIZE: { 
             if (msg->c_type != MESSAGE_T__C_TYPE__CT_NONE) {
                 msg->opcode = MESSAGE_T__OPCODE__OP_ERROR;
                 msg->c_type = MESSAGE_T__C_TYPE__CT_NONE;
@@ -157,13 +155,13 @@ int invoke(MessageT *msg, struct list_t *list) {
                         
             int size = list_size(list);
             
-            msg->opcode = MESSAGE_T__OPCODE__OP_SIZE + 1; // 41
+            msg->opcode = MESSAGE_T__OPCODE__OP_SIZE + 1; 
             msg->c_type = MESSAGE_T__C_TYPE__CT_RESULT;
             msg->result = size;
             return 0;
         }
 
-        case MESSAGE_T__OPCODE__OP_GETMODELS: { // opcode 50
+        case MESSAGE_T__OPCODE__OP_GETMODELS: { 
             
             if (msg->c_type != MESSAGE_T__C_TYPE__CT_NONE) {
                 msg->opcode = MESSAGE_T__OPCODE__OP_ERROR;
@@ -179,10 +177,10 @@ int invoke(MessageT *msg, struct list_t *list) {
                 return 0;
             }
             
-            msg->opcode = MESSAGE_T__OPCODE__OP_GETMODELS + 1; // 51
+            msg->opcode = MESSAGE_T__OPCODE__OP_GETMODELS + 1; 
             msg->c_type = MESSAGE_T__C_TYPE__CT_MODEL;
             
-            // Contar modelos
+            // Contar os modelos
             int count = 0;
             while (model_list[count] != NULL) {
                 count++;
@@ -221,7 +219,7 @@ int invoke(MessageT *msg, struct list_t *list) {
             return 0;
         }
 
-        case MESSAGE_T__OPCODE__OP_GETLISTBYTEAR: { // opcode 60
+        case MESSAGE_T__OPCODE__OP_GETLISTBYTEAR: { 
                    (void*)list, list->size, msg->result);
             
             if (msg->c_type != MESSAGE_T__C_TYPE__CT_RESULT) {
@@ -246,7 +244,7 @@ int invoke(MessageT *msg, struct list_t *list) {
                 return 0;
             }
             
-            msg->opcode = MESSAGE_T__OPCODE__OP_GETLISTBYTEAR + 1; // 61
+            msg->opcode = MESSAGE_T__OPCODE__OP_GETLISTBYTEAR + 1; 
             msg->c_type = MESSAGE_T__C_TYPE__CT_LIST;
             
             // Contar elementos

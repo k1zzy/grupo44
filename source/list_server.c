@@ -36,8 +36,8 @@ int main(int argc, char *argv[]) {
     sigaction(SIGINT, &act, NULL);  // CTRL+C
     sigaction(SIGTERM, &act, NULL); // kill command
     
-    // Ignorar SIGPIPE
-    signal(SIGPIPE, SIG_IGN); // para nao crashar
+    // Ignorar SIGPIPE para não dar crash
+    signal(SIGPIPE, SIG_IGN); 
     
     // inicia o servidor de rede
     int listening_socket = network_server_init(port);
