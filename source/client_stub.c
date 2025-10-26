@@ -203,18 +203,12 @@ int rlist_size(struct rlist_t *rlist) {
 
     MessageT *resp = network_send_receive(rlist, &msg);
     if (!resp) {
-        printf("[DEBUG CLIENT] rlist_size: resp é NULL\n");
         return -1;
     }
     
-    printf("[DEBUG CLIENT] rlist_size: resp->opcode=%d, resp->c_type=%d, resp->result=%d\n", 
-           resp->opcode, resp->c_type, resp->result);
-    
     int size = (resp->c_type == MESSAGE_T__C_TYPE__CT_RESULT) ? resp->result : -1;
     message_t__free_unpacked(resp, NULL);
-    
-    printf("[DEBUG CLIENT] rlist_size: retornando %d\n", size);
-    
+        
     return size;
 }
 

@@ -13,7 +13,7 @@
 #include "../include/message-private.h"
 
 
-static volatile int server_shutdown_requested = 0;
+static volatile int server_shutdown_requested = 0; // Flag para término do servidor
 static int g_listen_fd = -1;   // Socket de listening global
 static int g_conn_fd = -1;      // Socket de conexão atual global
 
@@ -146,7 +146,6 @@ int network_main_loop(int listening_socket, struct list_t *list) {
                 break; // client fechou ou erro
             }
 
-            printf("[DEBUG] Antes invoke: list=%p, opcode=%d\n", (void*)list, req->opcode);
             
             /* invoke processa a mesma MessageT e preenche o resultado */
             if (invoke(req, list) < 0) {
@@ -154,7 +153,6 @@ int network_main_loop(int listening_socket, struct list_t *list) {
                 // req->result = -1; TODO
             }
             
-            printf("[DEBUG] Depois invoke: list=%p, list->size=%d\n", (void*)list, list->size);
 
             if (network_send(client_sock, req) != 0) {
                 message_t__free_unpacked(req, NULL); // TODO nao sei se e para dar unpack mesmo em caso de erro
@@ -172,7 +170,6 @@ int network_main_loop(int listening_socket, struct list_t *list) {
     return 0;
 }
 
-// TODO logo verifico mais a fundo - não há memória a ser alocada no init
 int network_server_close(int socket_fd) {
     if (socket_fd >= 0) {
         close(socket_fd); // fecha o socket
@@ -181,7 +178,6 @@ int network_server_close(int socket_fd) {
     return -1;
 }
 
-// TODO logo verifico mais a fundo
 void network_server_request_shutdown(void) {
     // Sinalizar término
     server_shutdown_requested = 1;

@@ -45,7 +45,7 @@ void processa_comando(struct rlist_t *rlist, char *linha) {
     if (!comando) {
         return;
     }
-
+    
     if(strcmp(comando, "add") == 0){
         char *modelo = strtok(NULL, delim);
         char *ano_str = strtok(NULL, delim);
@@ -97,7 +97,7 @@ void processa_comando(struct rlist_t *rlist, char *linha) {
             return;
         }
         
-        int ano = atoi(ano_str);
+        int ano = atoi(ano_str); 
         struct data_t **carros = rlist_get_by_year(rlist, ano);
         
         if(carros == NULL){     
@@ -107,8 +107,8 @@ void processa_comando(struct rlist_t *rlist, char *linha) {
         
         for(int i = 0; carros[i] != NULL; i++){
             print_car(carros[i]);
-            free(carros[i]->modelo);
-            free(carros[i]);
+            free(carros[i]->modelo); //libertar memoria alocada para o modelo
+            free(carros[i]); //libertar memoria alocada para a struct data_t
         }
         free(carros);
     }
@@ -130,8 +130,8 @@ void processa_comando(struct rlist_t *rlist, char *linha) {
         }
         
         print_car(carro);
-        free(carro->modelo);
-        free(carro);
+        free(carro->modelo); //libertar memoria alocada para o modelo
+        free(carro); //libertar memoria alocada para a struct data_t
     }
 
     else if(strcmp(comando, "get_list_ordered_by_year") == 0){
@@ -144,8 +144,8 @@ void processa_comando(struct rlist_t *rlist, char *linha) {
         
         for(int i = 0; carros[i] != NULL; i++){
             print_car(carros[i]);
-            free(carros[i]->modelo);
-            free(carros[i]);
+            free(carros[i]->modelo); //libertar memoria alocada para o modelo
+            free(carros[i]); //libertar memoria alocada para a struct data_t
         }
         free(carros);
     }
@@ -168,12 +168,13 @@ void processa_comando(struct rlist_t *rlist, char *linha) {
             return;
         }
         
-        for(int i = 0; modelos[i] != NULL; i++){
+        for(int i = 0; modelos[i] != NULL; i++){ 
             printf("Modelo: %s\n", modelos[i]);
         }
-        rlist_free_model_list(modelos);
+        rlist_free_model_list(modelos); //libertar memoria alocada para a lista de modelos
     }
 
+    // imprime todos os comandos disponíveis
     else if(strcmp(comando, "help") == 0){
         printf("Comandos disponíveis: \n");
         printf("  add <modelo> <ano> <preco> <marca:0-4> <combustivel:0-3>\n");
@@ -234,7 +235,8 @@ int main (int argc, char *argv[]) {
     printf("  quit\n\n");
 
     char linha[1024];
-
+    
+    // loop principal de leitura de comandos
     while(1){
         printf("Command: ");
         fflush(stdout);
