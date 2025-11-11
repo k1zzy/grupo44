@@ -1,6 +1,8 @@
 Projeto: Sistemas Distribuídos 2025/2026
  Grupo 44
  Autores: Rodrigo Afonso (61839), Guilherme Ramos (61840), Miguel Ferreira (61879)
+
+É necessário a instalação do protoc para obter o sdmessage.
  
 O makefile contém os seguintes comandos:
  

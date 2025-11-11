@@ -84,9 +84,7 @@ int invoke(MessageT *msg, struct list_t *list) {
             return 0;
         }
 
-        case MESSAGE_T__OPCODE__OP_GET: { 
-                   (void*)list, list->size, msg->c_type, msg->result);
-            
+        case MESSAGE_T__OPCODE__OP_GET: {
             if (msg->c_type != MESSAGE_T__C_TYPE__CT_MARCA) {
                 msg->opcode = MESSAGE_T__OPCODE__OP_ERROR;
                 msg->c_type = MESSAGE_T__C_TYPE__CT_NONE;
@@ -223,8 +221,6 @@ int invoke(MessageT *msg, struct list_t *list) {
         }
 
         case MESSAGE_T__OPCODE__OP_GETLISTBYTEAR: { 
-                   (void*)list, list->size, msg->result);
-            
             if (msg->c_type != MESSAGE_T__C_TYPE__CT_RESULT) {
                 msg->opcode = MESSAGE_T__OPCODE__OP_ERROR;
                 msg->c_type = MESSAGE_T__C_TYPE__CT_NONE;

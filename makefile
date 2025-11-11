@@ -81,12 +81,6 @@ $(OBJ_DIR)/list_server.o: $(PROTO_HEADER)
 # clean
 clean:
 	rm -rf $(OBJ_DIR) $(BIN_DIR) $(LIB_DIR)
-	rm -f $(PROTO_SRC) $(PROTO_HEADER)
-
-# for debug (apaga-se antes de se entregar)
-print:
-	@echo "Client OBJS: $(CLIENT_OBJS)"
-	@echo "Server OBJS: $(SERVER_OBJS)"
-	@echo "List OBJS: $(LIST_OBJS)"
+	rm -f $(PROTO_SRC)
 
 .PHONY: all liblist list_client list_server clean print
