@@ -5,6 +5,7 @@
 #include "../include/client_stub.h"
 #include "../include/client_stub-private.h"
 #include "../include/network_client.h"
+#include "../include/server_log.h"
 #include "sdmessage.pb-c.h"
 #include <string.h>
 #include <stdio.h>
@@ -40,6 +41,13 @@ struct rlist_t *rlist_connect(char *address_port) {
         free(rlist);
         return NULL;
     }
+    size_t len = strlen(rlist->server_address) + 1 /* ':' */ + 12 /*sockfd*/ + 1;
+    char *clientPort = malloc(len);
+    if (clientPort) {
+        snprintf(clientPort, len, "%s:%d", rlist->server_address, rlist->sockfd);
+    }
+    write_log(gettimeofday_microsec(), clientPort, "CONNECT", NULL, NULL, NULL);
+    free(clientPort);
     return rlist;
 }
 
@@ -47,13 +55,24 @@ int rlist_disconnect(struct rlist_t *rlist) {
     if (!rlist) {
         return -1; // rlist inválida
     }
+
+    size_t len = strlen(rlist->server_address) + 1 /* ':' */ + 12 /*sockfd*/ + 1;
+    char *clientPort = malloc(len);
+    if (clientPort) {
+        snprintf(clientPort, len, "%s:%d", rlist->server_address, rlist->sockfd);
+    }
+    write_log(gettimeofday_microsec(), clientPort, "DISCONNECT", NULL, NULL, NULL);
+    free(clientPort);
+
     // fechar a socket se estiver aberta
     if (rlist->sockfd != -1) {
         // fechar a socket
         close(rlist->sockfd);
     }
+
     free(rlist->server_address); // libertar o server address
     free(rlist); // libertar a estrutura rlist
+    write_log(gettimeofday_microsec(), rlist->server_address, "CLOSE", NULL, NULL, NULL);
     return 0;
 }
 // adicionar carro
@@ -61,6 +80,23 @@ int rlist_add(struct rlist_t *rlist, struct data_t *car) {
     if (!rlist || !car) {
         return -1;
     }
+
+    /* criar argumento para o log */
+    size_t len = strlen(car->marca) + 1 + strlen(car->modelo) + 1 + 12 /*ano*/;
+    char *argumento = malloc(len);
+    if (argumento) {
+        snprintf(argumento, len, "%s %s %d", car->marca, car->modelo, car->ano);
+    }
+    /* criar argumento para o log */
+    size_t len = strlen(rlist->server_address) + 1 /* ':' */ + 12 /*sockfd*/ + 1;
+    char *clientPort = malloc(len);
+    if (clientPort) {
+        snprintf(clientPort, len, "%s:%d", rlist->server_address, rlist->sockfd);
+    }
+
+    write_log(gettimeofday_microsec(), clientPort, "REQUEST", "OP_ADD", "CT_DATA", argumento);
+    free(argumento);
+    free(clientPort);
 
     MessageT msg = MESSAGE_T__INIT;
     msg.opcode = MESSAGE_T__OPCODE__OP_ADD;
@@ -103,6 +139,14 @@ int rlist_add(struct rlist_t *rlist, struct data_t *car) {
 int rlist_remove_by_model(struct rlist_t *rlist, const char *modelo) {
     if (!rlist || !modelo) return -1;
 
+    size_t len = strlen(rlist->server_address) + 1 /* ':' */ + 12 /*sockfd*/ + 1;
+    char *clientPort = malloc(len);
+    if (clientPort) {
+        snprintf(clientPort, len, "%s:%d", rlist->server_address, rlist->sockfd);
+    }
+    write_log(gettimeofday_microsec(), clientPort, "REQUEST", "OP_DEL", "CT_MODEL", modelo);
+    free(clientPort);
+
     MessageT msg = MESSAGE_T__INIT;
     msg.opcode = MESSAGE_T__OPCODE__OP_DEL;
     msg.c_type = MESSAGE_T__C_TYPE__CT_MODEL;
@@ -132,6 +176,14 @@ int rlist_remove_by_model(struct rlist_t *rlist, const char *modelo) {
 struct data_t *rlist_get_by_marca(struct rlist_t *rlist, enum marca_t marca) {
     if (!rlist) return NULL;
 
+    size_t len = strlen(rlist->server_address) + 1 /* ':' */ + 12 /*sockfd*/ + 1;
+    char *clientPort = malloc(len);
+    if (clientPort) {
+        snprintf(clientPort, len, "%s:%d", rlist->server_address, rlist->sockfd);
+    }
+    write_log(gettimeofday_microsec(), clientPort, "REQUEST", "OP_GET", "CT_MARCA", marca_to_string(marca));
+    free(clientPort);
+
     MessageT msg = MESSAGE_T__INIT;
     msg.opcode = MESSAGE_T__OPCODE__OP_GET;
     msg.c_type = MESSAGE_T__C_TYPE__CT_MARCA;
@@ -152,6 +204,14 @@ struct data_t *rlist_get_by_marca(struct rlist_t *rlist, enum marca_t marca) {
 // obter carros por ano
 struct data_t **rlist_get_by_year(struct rlist_t *rlist, int ano) {
     if (!rlist) return NULL;
+
+    size_t len = strlen(rlist->server_address) + 1 /* ':' */ + 12 /*sockfd*/ + 1;
+    char *clientPort = malloc(len);
+    if (clientPort) {
+        snprintf(clientPort, len, "%s:%d", rlist->server_address, rlist->sockfd);
+    }
+    write_log(gettimeofday_microsec(), clientPort, "REQUEST", "OP_GETLISTBYTEAR", "CT_RESULT", ano_to_string(ano));
+    free(clientPort);
 
     MessageT msg = MESSAGE_T__INIT;
     msg.opcode = MESSAGE_T__OPCODE__OP_GETLISTBYTEAR;
@@ -185,6 +245,14 @@ struct data_t **rlist_get_by_year(struct rlist_t *rlist, int ano) {
 int rlist_order_by_year(struct rlist_t *rlist) {
     if (!rlist) return -1;
 
+    size_t len = strlen(rlist->server_address) + 1 /* ':' */ + 12 /*sockfd*/ + 1;
+    char *clientPort = malloc(len);
+    if (clientPort) {
+        snprintf(clientPort, len, "%s:%d", rlist->server_address, rlist->sockfd);
+    }
+    write_log(gettimeofday_microsec(), clientPort, "REQUEST", "OP_GETLISTBYTEAR", "CT_RESULT", NULL);
+    free(clientPort);
+
     MessageT msg = MESSAGE_T__INIT;
     msg.opcode = MESSAGE_T__OPCODE__OP_GETLISTBYTEAR;
     msg.c_type = MESSAGE_T__C_TYPE__CT_RESULT;
@@ -200,6 +268,14 @@ int rlist_size(struct rlist_t *rlist) {
     if (!rlist) {
         return -1;
     }
+
+    size_t len = strlen(rlist->server_address) + 1 /* ':' */ + 12 /*sockfd*/ + 1;
+    char *clientPort = malloc(len);
+    if (clientPort) {
+        snprintf(clientPort, len, "%s:%d", rlist->server_address, rlist->sockfd);
+    }
+    write_log(gettimeofday_microsec(), clientPort, "REQUEST", "OP_SIZE", "CT_NONE", NULL);
+    free(clientPort);
 
     MessageT msg = MESSAGE_T__INIT;
     msg.opcode = MESSAGE_T__OPCODE__OP_SIZE;
@@ -221,6 +297,14 @@ char **rlist_get_model_list(struct rlist_t *rlist) {
         return NULL;
     }
 
+    size_t len = strlen(rlist->server_address) + 1 /* ':' */ + 12 /*sockfd*/ + 1;
+    char *clientPort = malloc(len);
+    if (clientPort) {
+        snprintf(clientPort, len, "%s:%d", rlist->server_address, rlist->sockfd);
+    }
+    write_log(gettimeofday_microsec(), clientPort, "REQUEST", "OP_GETMODELS", "CT_NONE", NULL);
+    free(clientPort);
+    
     MessageT msg = MESSAGE_T__INIT;
     msg.opcode = MESSAGE_T__OPCODE__OP_GETMODELS;
     msg.c_type = MESSAGE_T__C_TYPE__CT_NONE;
