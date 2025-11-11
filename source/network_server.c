@@ -12,15 +12,58 @@
 #include <errno.h>
 #include <stdint.h>
 #include <signal.h>
+#include <pthread.h>
 
 #include "../include/sdmessage.pb-c.h"
 #include "../include/list_skel.h"
 #include "../include/message-private.h"
 
+#define MAX_CONNECTIONS 5
 
 static volatile int server_shutdown_requested = 0; // Flag para término do servidor
 static int g_listen_fd = -1;   // Socket de listening global
 static int g_conn_fd = -1;      // Socket de conexão atual global
+static int active_connections = 0; // Contador de conexões ativas
+static pthread_mutex_t thread_mutex = PTHREAD_MUTEX_INITIALIZER; // Mutex para sincronização da lista
+static struct thread_node *active_threads = NULL; // Cabeça da lista ligada de threads ativas
+static pthread_mutex_t list_mutex = PTHREAD_MUTEX_INITIALIZER; // Mutex para proteger acessos à lista compartilhada
+
+// estrutura para lista de threads
+struct thread_node {
+    pthread_t thread;
+    struct thread_node *next;
+};
+
+// adicionar thread à lista
+void add_active_thread(pthread_t t) {
+    struct thread_node *new_node = malloc(sizeof(struct thread_node));
+    if (!new_node) {
+        perror("malloc");
+        return;
+    }
+    new_node->thread = t;
+    new_node->next = active_threads;
+    active_threads = new_node;
+}
+
+// remover thread da lista
+void remove_active_thread(pthread_t t) {
+    struct thread_node *current = active_threads;
+    struct thread_node *prev = NULL;
+    while (current) {
+        if (pthread_equal(current->thread, t)) {
+            if (prev) {
+                prev->next = current->next;
+            } else {
+                active_threads = current->next;
+            }
+            free(current);
+            return;
+        }
+        prev = current;
+        current = current->next;
+    }
+}
 
 int network_server_init(short port) {
     // criar o socket TCP
@@ -52,7 +95,7 @@ int network_server_init(short port) {
     }
 
     // colocar a socket em modo de escuta
-    if (listen(listening_socket, 0) < 0) { // TODO backlog = 0 é muito pequeno
+    if (listen(listening_socket, MAX_CONNECTIONS) < 0) {
         perror("Error in listen");
         close(listening_socket);
         return -1;
@@ -139,40 +182,67 @@ int network_main_loop(int listening_socket, struct list_t *list) {
             perror("accept");
             continue;
         }
-
-        printf("Utilizador conectado\n");
+        
+        // lock
+        pthread_mutex_lock(&thread_mutex);
+        if(active_connections < MAX_CONNECTIONS) {
+            pthread_t new_thread; // será overwritten sempre que uma nova thread for criada
+            if (pthread_create(&threads[active_connections], NULL, handle_client, (void *)&client_sock) != 0) {
+                perror("pthread_create");
+                close(client_sock);
+                // incrementar o contador de conexões
+                pthread_mutex_unlock(&thread_mutex);
+                // unlock
+                continue;
+            }
+            add_active_thread(threads[active_connections]);
+            active_connections++;
+            printf("Utilizador conectado, conexões ativas: %d\n", active_connections);
+        }
+        else {
+            close(client_sock);
+            continue;
+        }
+        pthread_mutex_unlock(&thread_mutex);
         
         g_conn_fd = client_sock; // Guardar socket do cliente globalmente
-
-        // enquanto o server não for desligado
-        while (!server_shutdown_requested) {
-            MessageT *req = network_receive(client_sock); // receber o pedido do client
-            if (!req) {
-                break; // client fechou ou erro
-            }
-
-            //TODO
-            /* invoke processa a mesma MessageT e preenche o resultado */
-            if (invoke(req, list) < 0) {
-                // req->c_type = MESSAGE_T__C_TYPE__CT_RESULT;
-                // req->result = -1; TODO
-            }
-            
-
-            if (network_send(client_sock, req) != 0) {
-                message_t__free_unpacked(req, NULL); 
-                break;
-            }
-
-            message_t__free_unpacked(req, NULL);
-        }
-
-        close(client_sock);
-        printf("Utilizador desconectado\n");
-        g_conn_fd = -1; // Limpar socket do cliente
     }
 
     return 0;
+}
+
+
+
+void handle_client(void *arg) {
+    int client_socket = (int) arg;
+    MessageT *req = NULL;
+
+    // enquanto o server não for desligado
+    while (!server_shutdown_requested && (req = network_receive(client_socket))!= NULL) {
+        
+        // proteger acessos à lista com mutex
+        pthread_mutex_lock(&list_mutex);
+        if (invoke(req, list) < 0 || network_send(client_sock, req) < 0) {
+            req->opcode = MESSAGE_T__OPCODE__OP_ERROR;
+            req->c_type = MESSAGE_T__C_TYPE__CT_NONE;
+        }
+        pthread_mutex_unlock(&list_mutex);
+
+        message_t__free_unpacked(req, NULL);
+    }
+
+    g_conn_fd = -1; // Limpar socket do cliente
+        
+    close(client_socket);
+    
+    // Proteger o decremento com mutex
+    pthread_mutex_lock(&thread_mutex);
+    remove_active_thread(pthread_self());  // Remover da lista
+    active_connections--;  // Decrementar contador
+    printf("Utilizador desconectado, conexões ativas: %d\n", active_connections);
+    pthread_mutex_unlock(&thread_mutex);
+
+    pthread_exit(NULL);
 }
 
 int network_server_close(int socket_fd) {
