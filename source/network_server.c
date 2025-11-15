@@ -13,7 +13,9 @@
 #include <stdint.h>
 #include <signal.h>
 #include <pthread.h>
+#include <sys/time.h>
 
+#include "../include/server_log.h"
 #include "../include/sdmessage.pb-c.h"
 #include "../include/list_skel.h"
 #include "../include/message-private.h"
@@ -27,6 +29,15 @@ static int active_connections = 0; // Contador de conexões ativas
 static pthread_mutex_t thread_mutex = PTHREAD_MUTEX_INITIALIZER; // Mutex para sincronização da lista
 static struct thread_node *active_threads = NULL; // Cabeça da lista ligada de threads ativas
 static pthread_mutex_t list_mutex = PTHREAD_MUTEX_INITIALIZER; // Mutex para proteger acessos à lista compartilhada
+
+// argumentos passados a cada thread cliente
+struct client_handler_args {
+    int client_socket;
+    struct list_t *list;
+    char *client_addr_port;  // client addr:port
+};
+
+static void *handle_client(void *arg);
 
 // estrutura para lista de threads
 struct thread_node {
@@ -165,6 +176,15 @@ int network_send(int client_socket, MessageT *msg) {
     return 0;
 }
 
+char *get_client_addr_port(struct sockaddr_in *client_addr) {
+    static char addr_port[INET_ADDRSTRLEN + 6]; // espaço para IP + ':' + porto + '\0'
+    char ip_str[INET_ADDRSTRLEN];
+    inet_ntop(AF_INET, &client_addr->sin_addr, ip_str, sizeof(ip_str));
+    uint16_t port = ntohs(client_addr->sin_port);
+    snprintf(addr_port, sizeof(addr_port), "%s:%d", ip_str, port);
+    return addr_port;
+}
+
 int network_main_loop(int listening_socket, struct list_t *list) {
     if (listening_socket < 0) {
         return -1;
@@ -183,26 +203,58 @@ int network_main_loop(int listening_socket, struct list_t *list) {
             continue;
         }
         
-        // lock
         pthread_mutex_lock(&thread_mutex);
-        if(active_connections < MAX_CONNECTIONS) {
-            pthread_t new_thread; // será overwritten sempre que uma nova thread for criada
-            if (pthread_create(&threads[active_connections], NULL, handle_client, (void *)&client_sock) != 0) {
-                perror("pthread_create");
-                close(client_sock);
-                // incrementar o contador de conexões
-                pthread_mutex_unlock(&thread_mutex);
-                // unlock
-                continue;
-            }
-            add_active_thread(threads[active_connections]);
-            active_connections++;
-            printf("Utilizador conectado, conexões ativas: %d\n", active_connections);
-        }
-        else {
+        if (active_connections >= MAX_CONNECTIONS) {
+            // send OP_BUSY
+            MessageT *busy_msg = calloc(1, sizeof(MessageT));
+            message_t__init(busy_msg);
+            busy_msg->opcode = MESSAGE_T__OPCODE__OP_BUSY;
+            busy_msg->c_type = MESSAGE_T__C_TYPE__CT_NONE;
+            network_send(client_sock, busy_msg);
+            message_t__free_unpacked(busy_msg, NULL);
             close(client_sock);
+            pthread_mutex_unlock(&thread_mutex);
             continue;
         }
+
+        // send OP_READY
+        MessageT *ready_msg = calloc(1, sizeof(MessageT));
+        message_t__init(ready_msg);
+        ready_msg->opcode = MESSAGE_T__OPCODE__OP_READY;
+        ready_msg->c_type = MESSAGE_T__C_TYPE__CT_NONE;
+        network_send(client_sock, ready_msg);
+        message_t__free_unpacked(ready_msg, NULL);
+
+        struct client_handler_args *handler_args = malloc(sizeof(*handler_args));
+        if (!handler_args) {
+            perror("malloc");
+            close(client_sock);
+            pthread_mutex_unlock(&thread_mutex);
+            continue;
+        }
+        handler_args->client_socket = client_sock;
+        handler_args->list = list;
+        // get client address and port as string
+        char *client_addr_port = get_client_addr_port(&client_addr);
+        handler_args->client_addr_port = strdup(client_addr_port);
+
+        pthread_t thread;
+        int seconds = get_seconds();
+        if (pthread_create(&thread, NULL, handle_client, handler_args) != 0) {
+            perror("pthread_create");
+            free(handler_args);
+            close(client_sock);
+            pthread_mutex_unlock(&thread_mutex);
+            continue;
+        }
+        add_active_thread(thread);
+        active_connections++;
+        
+        // log de conexão
+        write_log(seconds, client_addr_port, "CONNECT", (MessageT__Opcode)0, (MessageT__CType)0, NULL);
+
+        printf("Utilizador conectado, conexões ativas: %d\n", active_connections);
+        
         pthread_mutex_unlock(&thread_mutex);
         
         g_conn_fd = client_sock; // Guardar socket do cliente globalmente
@@ -213,25 +265,41 @@ int network_main_loop(int listening_socket, struct list_t *list) {
 
 
 
-void handle_client(void *arg) {
-    int client_socket = (int) arg;
+void *handle_client(void *arg) {
+    struct client_handler_args *handler_args = arg;
+    int client_socket = handler_args->client_socket;
+    struct list_t *list = handler_args->list;
+    char *client_addr_port = handler_args->client_addr_port;
+    
+    free(handler_args);
+    
     MessageT *req = NULL;
-
     // enquanto o server não for desligado
     while (!server_shutdown_requested && (req = network_receive(client_socket))!= NULL) {
         
         // proteger acessos à lista com mutex
         pthread_mutex_lock(&list_mutex);
-        if (invoke(req, list) < 0 || network_send(client_sock, req) < 0) {
+        if (invoke(req, list) < 0 || network_send(client_socket, req) < 0) {
             req->opcode = MESSAGE_T__OPCODE__OP_ERROR;
             req->c_type = MESSAGE_T__C_TYPE__CT_NONE;
+            message_t__free_unpacked(req, NULL);
+            pthread_mutex_unlock(&list_mutex);
+            continue;
         }
         pthread_mutex_unlock(&list_mutex);
 
+        // log da operação
+        write_log(get_seconds(), client_addr_port, "REQUEST", req->opcode, req->c_type, req->data);
+
         message_t__free_unpacked(req, NULL);
     }
+    int seconds = get_seconds();
 
-    g_conn_fd = -1; // Limpar socket do cliente
+    // log de desconexão
+    write_log(seconds, client_addr_port, "CLOSE", (MessageT__Opcode)0, (MessageT__CType)0, NULL);
+    free(client_addr_port);
+
+    g_conn_fd = -1; // limpar socket do cliente
         
     close(client_socket);
     
@@ -243,6 +311,7 @@ void handle_client(void *arg) {
     pthread_mutex_unlock(&thread_mutex);
 
     pthread_exit(NULL);
+    return NULL;
 }
 
 int network_server_close(int socket_fd) {

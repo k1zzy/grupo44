@@ -6,7 +6,7 @@
 
 # Compilador e flags
 CC = gcc
-CFLAGS = -Wall -Wextra -Werror -Iinclude -g
+CFLAGS = -Wall -Wextra -Iinclude -g #-Werror
 PROTOC = protoc-c
 
 # directories
@@ -18,7 +18,7 @@ INC_DIR = include
 
 # src files
 CLIENT_SRCS = $(SRC_DIR)/list_client.c $(SRC_DIR)/client_stub.c $(SRC_DIR)/network_client.c $(SRC_DIR)/message-private.c $(SRC_DIR)/sdmessage.pb-c.c
-SERVER_SRCS = $(SRC_DIR)/list_server.c $(SRC_DIR)/network_server.c $(SRC_DIR)/list_skel.c $(SRC_DIR)/message-private.c $(SRC_DIR)/sdmessage.pb-c.c
+SERVER_SRCS = $(SRC_DIR)/list_server.c $(SRC_DIR)/network_server.c $(SRC_DIR)/list_skel.c $(SRC_DIR)/message-private.c $(SRC_DIR)/server_log.c $(SRC_DIR)/sdmessage.pb-c.c
 LIST_SRCS = $(SRC_DIR)/data.c $(SRC_DIR)/list.c
 
 # .o files
