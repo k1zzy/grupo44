@@ -12,9 +12,9 @@ O makefile contém os seguintes comandos:
 - make list_server,
 - make clean
 
-Ambos o list_client e o list_server são compatíveis com os binários fornecidos nos ficheiros de suporte.
-
 O cliente ao adicionar um carro tem certas limitações, apenas é permitido:
+
+Todas as leituras e escritas estão protegidas contra race conditions 
 
 - o ano entre 1886 e 2100,
 - a marca entre 0 e 4,
