@@ -8,8 +8,50 @@
 #include <sys/time.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sdmessage.pb-c.h>
 
 static pthread_mutex_t log_mutex = PTHREAD_MUTEX_INITIALIZER;
+
+char *translate_op_code(MessageT__Opcode opcode) {
+    switch (opcode) {
+        case MESSAGE_T__OPCODE__OP_BAD: return "OP_BAD";
+        case MESSAGE_T__OPCODE__OP_ADD: return "OP_ADD";
+        case MESSAGE_T__OPCODE__OP_GET: return "OP_GET";
+        case MESSAGE_T__OPCODE__OP_DEL: return "OP_DEL";
+        case MESSAGE_T__OPCODE__OP_SIZE: return "OP_SIZE";
+        case MESSAGE_T__OPCODE__OP_GETMODELS: return "OP_GETMODELS";
+        case MESSAGE_T__OPCODE__OP_GETLISTBYTEAR: return "OP_GETLISTBYTEAR";
+        case MESSAGE_T__OPCODE__OP_ORDER: return "OP_ORDER";
+        case MESSAGE_T__OPCODE__OP_BUSY: return "OP_BUSY";
+        case MESSAGE_T__OPCODE__OP_READY: return "OP_READY";
+        case MESSAGE_T__OPCODE__OP_ERROR: return "OP_ERROR";
+        default: return "UNKNOWN_OP";
+    }
+}
+
+char *translate_op_c_type(MessageT__CType c_type) {
+    switch (c_type) {
+        case MESSAGE_T__C_TYPE__CT_BAD: return "CT_BAD";
+        case MESSAGE_T__C_TYPE__CT_DATA: return "CT_DATA";
+        case MESSAGE_T__C_TYPE__CT_MARCA: return "CT_MARCA";
+        case MESSAGE_T__C_TYPE__CT_YEAR: return "CT_YEAR";
+        case MESSAGE_T__C_TYPE__CT_MODEL: return "CT_MODEL";
+        case MESSAGE_T__C_TYPE__CT_RESULT: return "CT_RESULT";
+        case MESSAGE_T__C_TYPE__CT_LIST: return "CT_LIST";
+        default: return "UNKNOWN_CT";
+    }
+}
+
+char *translate_marca(Marca marca) {
+    switch (marca) {
+        case MARCA__MARCA_TOYOTA: return "Toyota";
+        case MARCA__MARCA_BMW: return "Bmw";
+        case MARCA__MARCA_RENAULT: return "Renault";
+        case MARCA__MARCA_AUDI: return "Audi";
+        case MARCA__MARCA_MERCEDES: return "Mercedes";
+        default: return "UNKNOWN_MARCA";
+    }
+}
 
 char *make_client_addr_port(int sockfd) {
     struct sockaddr_in local_addr;
@@ -50,11 +92,11 @@ void write_log(int timestamp, const char *clientAddressPort, const char *eventTy
     fprintf(log_file, "%d %s %s", timestamp, clientAddressPort, eventType);
 
     if (opcode != 0)
-        fprintf(log_file, " %d %d", opcode, c_type);
+        fprintf(log_file, " %s %s", translate_op_code(opcode), translate_op_c_type(c_type));
 
     if (argument) {
         if (argument->marca) {
-            fprintf(log_file, " %d", argument->marca);
+            fprintf(log_file, " %s", translate_marca(argument->marca));
         }
         if (argument->modelo) {
             fprintf(log_file, " %s", argument->modelo);

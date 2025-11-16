@@ -6,7 +6,7 @@
 
 # Compilador e flags
 CC = gcc
-CFLAGS = -Wall -Wextra -Iinclude -g #-Werror
+CFLAGS = -Wall -Wextra -Iinclude -g -Werror
 PROTOC = protoc-c
 
 # directories
