@@ -15,7 +15,6 @@
 #include <pthread.h>
 #include <sys/time.h>
 
-#include "../include/server_log.h"
 #include "../include/sdmessage.pb-c.h"
 #include "../include/list_skel.h"
 #include "../include/message-private.h"
@@ -34,7 +33,6 @@ static pthread_mutex_t list_mutex = PTHREAD_MUTEX_INITIALIZER; // Mutex para pro
 struct client_handler_args {
     int client_socket;
     struct list_t *list;
-    char *client_addr_port;  // client addr:port
 };
 
 static void *handle_client(void *arg);
@@ -176,15 +174,6 @@ int network_send(int client_socket, MessageT *msg) {
     return 0;
 }
 
-char *get_client_addr_port(struct sockaddr_in *client_addr) {
-    static char addr_port[INET_ADDRSTRLEN + 6]; // espaço para IP + ':' + porto + '\0'
-    char ip_str[INET_ADDRSTRLEN];
-    inet_ntop(AF_INET, &client_addr->sin_addr, ip_str, sizeof(ip_str));
-    uint16_t port = ntohs(client_addr->sin_port);
-    snprintf(addr_port, sizeof(addr_port), "%s:%d", ip_str, port);
-    return addr_port;
-}
-
 int network_main_loop(int listening_socket, struct list_t *list) {
     if (listening_socket < 0) {
         return -1;
@@ -234,12 +223,8 @@ int network_main_loop(int listening_socket, struct list_t *list) {
         }
         handler_args->client_socket = client_sock;
         handler_args->list = list;
-        // get client address and port as string
-        char *client_addr_port = get_client_addr_port(&client_addr);
-        handler_args->client_addr_port = strdup(client_addr_port);
 
         pthread_t thread;
-        int seconds = get_seconds();
         if (pthread_create(&thread, NULL, handle_client, handler_args) != 0) {
             perror("pthread_create");
             free(handler_args);
@@ -249,9 +234,6 @@ int network_main_loop(int listening_socket, struct list_t *list) {
         }
         add_active_thread(thread);
         active_connections++;
-        
-        // log de conexão
-        write_log(seconds, client_addr_port, "CONNECT", (MessageT__Opcode)0, (MessageT__CType)0, NULL);
 
         printf("Utilizador conectado, conexões ativas: %d\n", active_connections);
         
@@ -269,8 +251,7 @@ void *handle_client(void *arg) {
     struct client_handler_args *handler_args = arg;
     int client_socket = handler_args->client_socket;
     struct list_t *list = handler_args->list;
-    char *client_addr_port = handler_args->client_addr_port;
-    
+
     free(handler_args);
     
     MessageT *req = NULL;
@@ -288,17 +269,9 @@ void *handle_client(void *arg) {
         }
         pthread_mutex_unlock(&list_mutex);
 
-        // log da operação
-        write_log(get_seconds(), client_addr_port, "REQUEST", req->opcode, req->c_type, req->data);
-
         message_t__free_unpacked(req, NULL);
     }
-    int seconds = get_seconds();
-
-    // log de desconexão
-    write_log(seconds, client_addr_port, "CLOSE", (MessageT__Opcode)0, (MessageT__CType)0, NULL);
-    free(client_addr_port);
-
+    
     g_conn_fd = -1; // limpar socket do cliente
         
     close(client_socket);

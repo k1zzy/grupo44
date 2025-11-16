@@ -13,7 +13,20 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <sys/time.h>
-#include <arpa/inet.h>
+
+static void log_event(struct rlist_t *rlist, const char *eventType, MessageT__Opcode opcode, MessageT__CType c_type, Data *argument) {
+    if (!rlist || rlist->sockfd < 0) {
+        return;
+    }
+
+    char *client_addr_port = make_client_addr_port(rlist->sockfd);
+    if (!client_addr_port) {
+        return;
+    }
+
+    write_log(get_seconds(), client_addr_port, eventType, opcode, c_type, argument);
+    free(client_addr_port);
+}
 
 struct rlist_t *rlist_connect(char *address_port) {
     struct rlist_t *rlist = NULL;
@@ -90,6 +103,8 @@ struct rlist_t *rlist_connect(char *address_port) {
     }
     message_t__free_unpacked(status, NULL);
 
+    log_event(rlist, "CONNECT", (MessageT__Opcode)0, (MessageT__CType)0, NULL);
+
     return rlist;
 }
 
@@ -97,6 +112,8 @@ int rlist_disconnect(struct rlist_t *rlist) {
     if (!rlist) {
         return -1; // rlist inválida
     }
+
+    log_event(rlist, "CLOSE", (MessageT__Opcode)0, (MessageT__CType)0, NULL);
 
     // fechar a socket se estiver aberta
     if (rlist->sockfd != -1) {
@@ -134,6 +151,8 @@ int rlist_add(struct rlist_t *rlist, struct data_t *car) {
 
     msg.data = pd;
 
+    log_event(rlist, "REQUEST", msg.opcode, msg.c_type, msg.data);
+
     MessageT *resp = network_send_receive(rlist, &msg); // enviar a mensagem e receber a resposta
 
     if (pd->modelo) {
@@ -168,6 +187,8 @@ int rlist_remove_by_model(struct rlist_t *rlist, const char *modelo) {
         return -1;
     }
 
+    log_event(rlist, "REQUEST", msg.opcode, msg.c_type, msg.data);
+
     MessageT *resp = network_send_receive(rlist, &msg);
 
     free(msg.models[0]);
@@ -189,6 +210,8 @@ struct data_t *rlist_get_by_marca(struct rlist_t *rlist, enum marca_t marca) {
     msg.c_type = MESSAGE_T__C_TYPE__CT_MARCA;
     msg.result = (int32_t)marca;
 
+    log_event(rlist, "REQUEST", msg.opcode, msg.c_type, msg.data);
+
     MessageT *resp = network_send_receive(rlist, &msg);
     if (!resp) return NULL;
 
@@ -209,6 +232,8 @@ struct data_t **rlist_get_by_year(struct rlist_t *rlist, int ano) {
     msg.opcode = MESSAGE_T__OPCODE__OP_GETLISTBYTEAR;
     msg.c_type = MESSAGE_T__C_TYPE__CT_RESULT;
     msg.result = (int32_t)ano;
+
+    log_event(rlist, "REQUEST", msg.opcode, msg.c_type, msg.data);
 
     MessageT *resp = network_send_receive(rlist, &msg);
     if (!resp) return NULL;
@@ -241,6 +266,8 @@ int rlist_order_by_year(struct rlist_t *rlist) {
     msg.opcode = MESSAGE_T__OPCODE__OP_GETLISTBYTEAR;
     msg.c_type = MESSAGE_T__C_TYPE__CT_RESULT;
 
+    log_event(rlist, "REQUEST", msg.opcode, msg.c_type, msg.data);
+
     MessageT *resp = network_send_receive(rlist, &msg);
     if (!resp) return -1;
     int res = (resp->c_type == MESSAGE_T__C_TYPE__CT_RESULT) ? resp->result : -1;
@@ -256,6 +283,8 @@ int rlist_size(struct rlist_t *rlist) {
     MessageT msg = MESSAGE_T__INIT;
     msg.opcode = MESSAGE_T__OPCODE__OP_SIZE;
     msg.c_type = MESSAGE_T__C_TYPE__CT_NONE;
+
+    log_event(rlist, "REQUEST", msg.opcode, msg.c_type, msg.data);
 
     MessageT *resp = network_send_receive(rlist, &msg);
     if (!resp) {
@@ -276,6 +305,8 @@ char **rlist_get_model_list(struct rlist_t *rlist) {
     MessageT msg = MESSAGE_T__INIT;
     msg.opcode = MESSAGE_T__OPCODE__OP_GETMODELS;
     msg.c_type = MESSAGE_T__C_TYPE__CT_NONE;
+
+    log_event(rlist, "REQUEST", msg.opcode, msg.c_type, msg.data);
 
     MessageT *resp = network_send_receive(rlist, &msg);
     if (!resp) return NULL;
