@@ -14,10 +14,12 @@ O makefile contém os seguintes comandos:
 
 O cliente ao adicionar um carro tem certas limitações, apenas é permitido:
 
-Todas as leituras e escritas estão protegidas contra race conditions 
-
 - o ano entre 1886 e 2100,
 - a marca entre 0 e 4,
 - o combustivel entre 0 e 3
+
+Todas as leituras e escritas estão protegidas contra race conditions.
+
+O programa se não executado dentro do local do ficheiro, irá fazer com que o server.log do primeiro cliente fique mal localizado.
 
 Foi verificado no valgrind ambos os binários e não existe memory leaks.

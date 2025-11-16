@@ -25,9 +25,9 @@ static volatile int server_shutdown_requested = 0; // Flag para término do serv
 static int g_listen_fd = -1;   // Socket de listening global
 static int g_conn_fd = -1;      // Socket de conexão atual global
 static int active_connections = 0; // Contador de conexões ativas
-static pthread_mutex_t thread_mutex = PTHREAD_MUTEX_INITIALIZER; // Mutex para sincronização da lista
-static struct thread_node *active_threads = NULL; // Cabeça da lista ligada de threads ativas
+static pthread_mutex_t thread_mutex = PTHREAD_MUTEX_INITIALIZER; // Mutex para sincronização de recursos partilhados
 static pthread_mutex_t list_mutex = PTHREAD_MUTEX_INITIALIZER; // Mutex para proteger acessos à lista compartilhada
+static pthread_cond_t active_cond = PTHREAD_COND_INITIALIZER; // Condição para aguardar que todas as threads terminem
 
 // argumentos passados a cada thread cliente
 struct client_handler_args {
@@ -37,34 +37,36 @@ struct client_handler_args {
 
 static void *handle_client(void *arg);
 
-// estrutura para lista de threads
-struct thread_node {
-    pthread_t thread;
-    struct thread_node *next;
+// estrutura para lista de sockets
+struct socket_node {
+    int socket;
+    struct socket_node *next;
 };
 
-// adicionar thread à lista
-void add_active_thread(pthread_t t) {
-    struct thread_node *new_node = malloc(sizeof(struct thread_node));
+static struct socket_node *active_sockets = NULL;
+
+// adicionar socket à lista
+void add_active_socket(int sock) {
+    struct socket_node *new_node = malloc(sizeof(struct socket_node));
     if (!new_node) {
         perror("malloc");
         return;
     }
-    new_node->thread = t;
-    new_node->next = active_threads;
-    active_threads = new_node;
+    new_node->socket = sock;
+    new_node->next = active_sockets;
+    active_sockets = new_node;
 }
 
-// remover thread da lista
-void remove_active_thread(pthread_t t) {
-    struct thread_node *current = active_threads;
-    struct thread_node *prev = NULL;
+// remover socket da lista
+void remove_active_socket(int sock) {
+    struct socket_node *current = active_sockets;
+    struct socket_node *prev = NULL;
     while (current) {
-        if (pthread_equal(current->thread, t)) {
+        if (current->socket == sock) {
             if (prev) {
                 prev->next = current->next;
             } else {
-                active_threads = current->next;
+                active_sockets = current->next;
             }
             free(current);
             return;
@@ -232,7 +234,8 @@ int network_main_loop(int listening_socket, struct list_t *list) {
             pthread_mutex_unlock(&thread_mutex);
             continue;
         }
-        add_active_thread(thread);
+        pthread_detach(thread);
+        add_active_socket(client_sock);
         active_connections++;
 
         printf("Utilizador conectado, conexões ativas: %d\n", active_connections);
@@ -274,16 +277,20 @@ void *handle_client(void *arg) {
     
     g_conn_fd = -1; // limpar socket do cliente
         
-    close(client_socket);
+    if (!server_shutdown_requested) {
+        close(client_socket);
+    }
     
-    // Proteger o decremento com mutex
+    // remover socket da lista
     pthread_mutex_lock(&thread_mutex);
-    remove_active_thread(pthread_self());  // Remover da lista
+    remove_active_socket(client_socket);
     active_connections--;  // Decrementar contador
     printf("Utilizador desconectado, conexões ativas: %d\n", active_connections);
+    if (active_connections == 0) {
+        pthread_cond_signal(&active_cond);
+    }
     pthread_mutex_unlock(&thread_mutex);
 
-    pthread_exit(NULL);
     return NULL;
 }
 
@@ -296,18 +303,45 @@ int network_server_close(int socket_fd) {
 }
 
 void network_server_request_shutdown(void) {
-    // Sinalizar término
+    // sinalizar término
     server_shutdown_requested = 1;
     
-    // Fechar socket de conexão atual (se existir)
+    // fechar socket de conexão atual (se existir)
     if (g_conn_fd >= 0) {
         close(g_conn_fd);
         g_conn_fd = -1;
     }
     
-    // Fechar socket de listening (desbloqueia accept())
+    // fechar socket de listening (desbloqueia accept())
     if (g_listen_fd >= 0) {
         close(g_listen_fd);
         g_listen_fd = -1;
     }
+}
+
+void network_server_join_threads(void) {
+    pthread_mutex_lock(&thread_mutex);
+
+    // fechar todos os sockets de cliente para desbloquear as threads ainda ativas
+    struct socket_node *sock_current = active_sockets;
+    while (sock_current) {
+        close(sock_current->socket);
+        sock_current = sock_current->next;
+    }
+
+    // esperar que todas as threads terminem
+    while (active_connections > 0) {
+        pthread_cond_wait(&active_cond, &thread_mutex);
+    }
+
+    // libertar estruturas auxiliares (por segurança)
+    sock_current = active_sockets;
+    while (sock_current) {
+        struct socket_node *next = sock_current->next;
+        free(sock_current);
+        sock_current = next;
+    }
+    active_sockets = NULL;
+
+    pthread_mutex_unlock(&thread_mutex);
 }

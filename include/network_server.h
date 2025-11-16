@@ -51,4 +51,7 @@ int network_server_close(int socket);
 /* Sinaliza término e fecha FDs internos (desbloqueia accept/read)*/
 void network_server_request_shutdown(void);
 
+/* Aguarda que todas as threads terminem e liberta recursos auxiliares */
+void network_server_join_threads(void);
+
 #endif

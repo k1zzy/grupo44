@@ -62,6 +62,9 @@ int main(int argc, char *argv[]) {
     // main loop
     network_main_loop(listening_socket, list);
     
+    // Aguardar que todas as threads terminem
+    network_server_join_threads();
+    
     // fechar servidor e destruir lista
     network_server_close(listening_socket);
     list_skel_destroy(list);
