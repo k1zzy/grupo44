@@ -7,6 +7,7 @@
 # Compilador e flags
 CC = gcc
 CFLAGS = -Wall -Wextra -Iinclude -g -Werror
+LIBS = -lzookeeper_mt
 PROTOC = protoc-c
 
 # directories
@@ -17,8 +18,8 @@ LIB_DIR = lib
 INC_DIR = include
 
 # src files
-CLIENT_SRCS = $(SRC_DIR)/list_client.c $(SRC_DIR)/client_stub.c $(SRC_DIR)/network_client.c $(SRC_DIR)/message-private.c $(SRC_DIR)/server_log.c $(SRC_DIR)/sdmessage.pb-c.c
-SERVER_SRCS = $(SRC_DIR)/list_server.c $(SRC_DIR)/network_server.c $(SRC_DIR)/list_skel.c $(SRC_DIR)/message-private.c $(SRC_DIR)/server_log.c $(SRC_DIR)/sdmessage.pb-c.c
+CLIENT_SRCS = $(SRC_DIR)/list_client.c $(SRC_DIR)/client_stub.c $(SRC_DIR)/network_client.c $(SRC_DIR)/message-private.c $(SRC_DIR)/server_log.c $(SRC_DIR)/sdmessage.pb-c.c $(SRC_DIR)/zookeeper_utils.c
+SERVER_SRCS = $(SRC_DIR)/list_server.c $(SRC_DIR)/network_server.c $(SRC_DIR)/list_skel.c $(SRC_DIR)/message-private.c $(SRC_DIR)/server_log.c $(SRC_DIR)/sdmessage.pb-c.c $(SRC_DIR)/zookeeper_utils.c
 LIST_SRCS = $(SRC_DIR)/data.c $(SRC_DIR)/list.c
 
 # .o files
@@ -51,14 +52,14 @@ list_client: $(CLIENT_BIN)
 
 $(CLIENT_BIN): $(CLIENT_OBJS) $(LIB_LIST)
 	@mkdir -p $(BIN_DIR)
-	$(CC) $(CFLAGS) -o $@ $(CLIENT_OBJS) -L$(LIB_DIR) -llist -lprotobuf-c
+	$(CC) $(CFLAGS) -o $@ $(CLIENT_OBJS) -L$(LIB_DIR) -llist -lprotobuf-c $(LIBS)
 
 # Compiles Server
 list_server: $(SERVER_BIN)
 
 $(SERVER_BIN): $(SERVER_OBJS) $(LIB_LIST)
 	@mkdir -p $(BIN_DIR)
-	$(CC) $(CFLAGS) -o $@ $(SERVER_OBJS) -L$(LIB_DIR) -llist -lprotobuf-c
+	$(CC) $(CFLAGS) -o $@ $(SERVER_OBJS) -L$(LIB_DIR) -llist -lprotobuf-c $(LIBS)
 
 # Gerar código dos Protocol Buffers
 $(PROTO_SRC) $(PROTO_HEADER): $(PROTO_FILE)
