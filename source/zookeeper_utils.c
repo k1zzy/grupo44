@@ -2,12 +2,13 @@
 #include <stdio.h>
 #include <string.h>
 
-// Global watcher for connection state
+// watcher conexao
 void connection_watcher(zhandle_t *zh, int type, int state, const char *path,
                         void *watcherCtx) {
   (void)zh;
   (void)path;
   (void)watcherCtx;
+  // ve se conectou ou expirou
   if (type == ZOO_SESSION_EVENT) {
     if (state == ZOO_CONNECTED_STATE) {
       printf("Connected to ZooKeeper server!\n");
@@ -21,7 +22,7 @@ zhandle_t *zookeeper_connect(const char *host_port) {
   zhandle_t *zh = zookeeper_init(host_port, connection_watcher, 2000, 0, 0, 0);
   if (!zh) {
     fprintf(stderr, "Error connecting to ZooKeeper server at %s\n", host_port);
-    return NULL;
+    return NULL; // erro ligacao
   }
   return zh;
 }
@@ -30,13 +31,15 @@ int zookeeper_create_chain_node(zhandle_t *zh) {
   if (!zh)
     return -1;
 
+  // cria no pai
+  // tenta criar o no fixo /chain se ja existir nao faz mal
   int ret =
       zoo_create(zh, "/chain", NULL, -1, &ZOO_OPEN_ACL_UNSAFE, 0, NULL, 0);
   if (ret == ZOK) {
     printf("Created /chain node\n");
     return 0;
   } else if (ret == ZNODEEXISTS) {
-    // Node already exists, which is fine
+    // ja existe
     return 0;
   } else {
     fprintf(stderr, "Error creating /chain node: %d\n", ret);
@@ -49,7 +52,8 @@ int zookeeper_create_server_node(zhandle_t *zh, const char *server_ip_port,
   if (!zh || !server_ip_port || !node_path_buffer)
     return -1;
 
-  // Create an ephemeral sequential node
+  // cria no efemero
+  // usamos ZOO_SEQUENCE para ter ordem na lista e ZOO_EPHEMERAL para apagar se o server cair
   int ret =
       zoo_create(zh, "/chain/node-", server_ip_port, strlen(server_ip_port) + 1,
                  &ZOO_OPEN_ACL_UNSAFE, ZOO_EPHEMERAL | ZOO_SEQUENCE,
@@ -57,7 +61,7 @@ int zookeeper_create_server_node(zhandle_t *zh, const char *server_ip_port,
 
   if (ret != ZOK) {
     fprintf(stderr, "Error creating server node: %d\n", ret);
-    return -1;
+    return -1; // erro criar no
   }
 
   printf("Created server node: %s\n", node_path_buffer);
@@ -69,8 +73,8 @@ int zookeeper_get_children(zhandle_t *zh, struct String_vector *children,
   if (!zh || !children)
     return -1;
 
-  // Use zoo_wget_children to specify the watcher
-  // function
+  // busca filhos
+  // pede ao zk a lista de nos e mete o watcher para sabermos quando muda
   int ret = zoo_wget_children(zh, "/chain", watcher, NULL, children);
 
   if (ret != ZOK) {

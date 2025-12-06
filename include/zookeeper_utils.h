@@ -24,6 +24,7 @@ extern int zoo_get(zhandle_t *zh, const char *path, int watch, char *buffer,
  * @param host_port The ZooKeeper server address (e.g., "127.0.0.1:2181").
  * @return A handle to the ZooKeeper connection, or NULL on failure.
  */
+// liga ao zookeeper
 zhandle_t *zookeeper_connect(const char *host_port);
 
 /**
@@ -31,6 +32,7 @@ zhandle_t *zookeeper_connect(const char *host_port);
  * @param zh The ZooKeeper handle.
  * @return 0 on success, -1 on failure.
  */
+// cria o no principal
 int zookeeper_create_chain_node(zhandle_t *zh);
 
 /**
@@ -43,6 +45,7 @@ int zookeeper_create_chain_node(zhandle_t *zh);
  * @param buffer_len Size of the buffer.
  * @return 0 on success, -1 on failure.
  */
+// regista o servidor
 int zookeeper_create_server_node(zhandle_t *zh, const char *server_ip_port,
                                  char *node_path_buffer, int buffer_len);
 
@@ -53,6 +56,7 @@ int zookeeper_create_server_node(zhandle_t *zh, const char *server_ip_port,
  * @param watcher_ctx Context to be passed to the watcher function.
  * @return 0 on success, -1 on failure.
  */
+// ve quem sao os filhos
 int zookeeper_get_children(zhandle_t *zh, struct String_vector *children,
                            watcher_fn watcher);
 
