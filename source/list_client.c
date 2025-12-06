@@ -13,7 +13,6 @@
 #include <string.h>
 #include <unistd.h>
 
-
 // Variáveis globais
 static struct rlist_t *head_server = NULL;
 static struct rlist_t *tail_server = NULL;
@@ -40,6 +39,9 @@ int compare_strings(const void *a, const void *b) {
 // Callback para mudanças nos filhos de /chain
 void chain_watcher(zhandle_t *zzh, int type, int state, const char *path,
                    void *watcherCtx) {
+  (void)state;
+  (void)path;
+  (void)watcherCtx;
   if (type == ZOO_CHILD_EVENT) {
     printf("Detected change in /chain children. Updating Head/Tail...\n");
 
@@ -77,7 +79,7 @@ void chain_watcher(zhandle_t *zzh, int type, int state, const char *path,
     int len = sizeof(head_addr);
 
     // Obter endereço do Head
-    if (zoo_get(zzh, head_path, 0, head_addr, &len, NULL) == ZOK) {
+    if (zoo_wget(zzh, head_path, NULL, NULL, head_addr, &len, NULL) == ZOK) {
       head_addr[len] = '\0';
       printf("New Head: %s\n", head_addr);
       // Reconectar se mudou (simplificado: reconecta sempre ou verifica se é o
@@ -90,7 +92,7 @@ void chain_watcher(zhandle_t *zzh, int type, int state, const char *path,
 
     // Obter endereço do Tail
     len = sizeof(tail_addr);
-    if (zoo_get(zzh, tail_path, 0, tail_addr, &len, NULL) == ZOK) {
+    if (zoo_wget(zzh, tail_path, NULL, NULL, tail_addr, &len, NULL) == ZOK) {
       tail_addr[len] = '\0';
       printf("New Tail: %s\n", tail_addr);
       if (tail_server)

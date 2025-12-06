@@ -6,6 +6,7 @@
 #ifndef _NETWORK_SERVER_H
 #define _NETWORK_SERVER_H
 
+#include "client_stub.h"
 #include "list.h"
 #include "sdmessage.pb-c.h"
 
@@ -53,5 +54,8 @@ void network_server_request_shutdown(void);
 
 /* Aguarda que todas as threads terminem e liberta recursos auxiliares */
 void network_server_join_threads(void);
+
+/* Define o servidor sucessor para propagação de escrita */
+// void network_server_set_successor(struct rlist_t *successor);
 
 #endif

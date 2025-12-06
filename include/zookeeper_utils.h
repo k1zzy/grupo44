@@ -3,6 +3,22 @@
 
 #include <zookeeper/zookeeper.h>
 
+/* Workaround for missing declarations in some ZK versions/configs */
+extern int zoo_create(zhandle_t *zh, const char *path, const char *value,
+                      int valuelen, const struct ACL_vector *acl, int flags,
+                      char *path_buffer, int path_buffer_len);
+
+extern int zoo_wget(zhandle_t *zh, const char *path, watcher_fn watcher,
+                    void *watcherCtx, char *buffer, int *buffer_len,
+                    struct Stat *stat);
+
+extern int zoo_wget_children(zhandle_t *zh, const char *path,
+                             watcher_fn watcher, void *watcherCtx,
+                             struct String_vector *strings);
+
+extern int zoo_get(zhandle_t *zh, const char *path, int watch, char *buffer,
+                   int *buffer_len, struct Stat *stat);
+
 /**
  * Connects to the ZooKeeper server.
  * @param host_port The ZooKeeper server address (e.g., "127.0.0.1:2181").

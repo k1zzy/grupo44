@@ -8,12 +8,44 @@
 #include "../include/list_skel.h"
 #include "../include/network_server.h"
 #include "../include/zookeeper_utils.h"
+#include <arpa/inet.h>
+#include <netdb.h>
+#include <netinet/in.h>
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 
+// Helper to get local IP
+int get_local_ip(char *buffer, size_t buflen) {
+  int sock = socket(AF_INET, SOCK_DGRAM, 0);
+  if (sock < 0)
+    return -1;
+
+  struct sockaddr_in serv;
+  memset(&serv, 0, sizeof(serv));
+  serv.sin_family = AF_INET;
+  serv.sin_addr.s_addr = inet_addr("8.8.8.8"); // Google DNS
+  serv.sin_port = htons(53);
+
+  // No actual connection used, just route lookup
+  if (connect(sock, (const struct sockaddr *)&serv, sizeof(serv)) < 0) {
+    close(sock);
+    return -1;
+  }
+
+  struct sockaddr_in local;
+  socklen_t namelen = sizeof(local);
+  if (getsockname(sock, (struct sockaddr *)&local, &namelen) < 0) {
+    close(sock);
+    return -1;
+  }
+
+  const char *p = inet_ntop(AF_INET, &local.sin_addr, buffer, buflen);
+  close(sock);
+  return (p != NULL) ? 0 : -1;
+}
 
 // Variáveis globais para gestão da replicação
 static zhandle_t *zh = NULL;
@@ -45,6 +77,9 @@ int compare_strings(const void *a, const void *b) {
 // Callback para mudanças nos filhos de /chain
 void chain_watcher(zhandle_t *zzh, int type, int state, const char *path,
                    void *watcherCtx) {
+  (void)state;
+  (void)path;
+  (void)watcherCtx;
   if (type == ZOO_CHILD_EVENT) {
     printf("Detected change in /chain children. Updating topology...\n");
 
@@ -195,10 +230,16 @@ int main(int argc, char *argv[]) {
   // Criar nó /chain se não existir
   zookeeper_create_chain_node(zh);
 
-  // Obter o meu IP (assumindo localhost para simplificar ou obter IP real)
-  // Para este projeto, vamos usar localhost e a porta fornecida
+  // Obter o meu IP
+  char my_ip[64];
+  if (get_local_ip(my_ip, sizeof(my_ip)) != 0) {
+    // Fallback to localhost if network fails
+    strcpy(my_ip, "127.0.0.1");
+    fprintf(stderr, "Failed to get real IP, using localhost fallback.\n");
+  }
+
   char my_addr[256];
-  snprintf(my_addr, sizeof(my_addr), "127.0.0.1:%d", port);
+  snprintf(my_addr, sizeof(my_addr), "%s:%d", my_ip, port);
 
   // Criar o meu nó efémero sequencial
   if (zookeeper_create_server_node(zh, my_addr, my_node_path,

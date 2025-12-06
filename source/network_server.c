@@ -16,6 +16,7 @@
 #include <sys/time.h>
 #include <unistd.h>
 
+#include "../include/client_stub-private.h"
 #include "../include/list_skel.h"
 #include "../include/message-private.h"
 #include "../include/sdmessage.pb-c.h"
@@ -338,11 +339,25 @@ void *handle_client(void *arg) {
     if (is_write_op) {
       pthread_mutex_lock(&successor_mutex);
       if (g_successor) {
+        printf("Propagating op to successor %s\n", g_successor->server_address);
         if (network_send(g_successor->sockfd, &propagate_msg) == 0) {
           MessageT *resp = network_receive(g_successor->sockfd);
           if (resp) {
+            if (resp->opcode == MESSAGE_T__OPCODE__OP_ERROR) {
+              printf("Propagation returned error from successor\n");
+              req->opcode = MESSAGE_T__OPCODE__OP_ERROR;
+              req->c_type = MESSAGE_T__C_TYPE__CT_NONE;
+            }
             message_t__free_unpacked(resp, NULL);
+          } else {
+            printf("Failed to receive response from successor\n");
+            req->opcode = MESSAGE_T__OPCODE__OP_ERROR;
+            req->c_type = MESSAGE_T__C_TYPE__CT_NONE;
           }
+        } else {
+          printf("Failed to send propagation to successor\n");
+          req->opcode = MESSAGE_T__OPCODE__OP_ERROR;
+          req->c_type = MESSAGE_T__C_TYPE__CT_NONE;
         }
       }
       pthread_mutex_unlock(&successor_mutex);

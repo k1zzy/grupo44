@@ -1,12 +1,12 @@
-# Grupo 44 - Projeto 2 SD
+# Grupo 44 - Projeto 4 SD
 # Elementos:
-# - Rodrigo Afonso Numero1
-# - Guilherme Ramos Numero2
+# - Rodrigo Afonso 61839
+# - Guilherme Ramos 61840
 # - Miguel Ferreira 61879
 
 # Compilador e flags
 CC = gcc
-CFLAGS = -Wall -Wextra -Iinclude -g -Werror
+CFLAGS = -Wall -Wextra -Iinclude -g #-Werror
 LIBS = -lzookeeper_mt
 PROTOC = protoc-c
 
@@ -19,7 +19,7 @@ INC_DIR = include
 
 # src files
 CLIENT_SRCS = $(SRC_DIR)/list_client.c $(SRC_DIR)/client_stub.c $(SRC_DIR)/network_client.c $(SRC_DIR)/message-private.c $(SRC_DIR)/server_log.c $(SRC_DIR)/sdmessage.pb-c.c $(SRC_DIR)/zookeeper_utils.c
-SERVER_SRCS = $(SRC_DIR)/list_server.c $(SRC_DIR)/network_server.c $(SRC_DIR)/list_skel.c $(SRC_DIR)/message-private.c $(SRC_DIR)/server_log.c $(SRC_DIR)/sdmessage.pb-c.c $(SRC_DIR)/zookeeper_utils.c
+SERVER_SRCS = $(SRC_DIR)/list_server.c $(SRC_DIR)/network_server.c $(SRC_DIR)/list_skel.c $(SRC_DIR)/message-private.c $(SRC_DIR)/server_log.c $(SRC_DIR)/sdmessage.pb-c.c $(SRC_DIR)/zookeeper_utils.c $(SRC_DIR)/client_stub.c $(SRC_DIR)/network_client.c
 LIST_SRCS = $(SRC_DIR)/data.c $(SRC_DIR)/list.c
 
 # .o files

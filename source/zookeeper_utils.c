@@ -1,11 +1,13 @@
 #include "../include/zookeeper_utils.h"
 #include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 
 // Global watcher for connection state
 void connection_watcher(zhandle_t *zh, int type, int state, const char *path,
                         void *watcherCtx) {
+  (void)zh;
+  (void)path;
+  (void)watcherCtx;
   if (type == ZOO_SESSION_EVENT) {
     if (state == ZOO_CONNECTED_STATE) {
       printf("Connected to ZooKeeper server!\n");
@@ -47,7 +49,6 @@ int zookeeper_create_server_node(zhandle_t *zh, const char *server_ip_port,
   if (!zh || !server_ip_port || !node_path_buffer)
     return -1;
 
-  char path[512];
   // Create an ephemeral sequential node
   int ret =
       zoo_create(zh, "/chain/node-", server_ip_port, strlen(server_ip_port) + 1,
@@ -68,7 +69,8 @@ int zookeeper_get_children(zhandle_t *zh, struct String_vector *children,
   if (!zh || !children)
     return -1;
 
-  // Use zoo_wget_children to specify the watcher function
+  // Use zoo_wget_children to specify the watcher
+  // function
   int ret = zoo_wget_children(zh, "/chain", watcher, NULL, children);
 
   if (ret != ZOK) {
