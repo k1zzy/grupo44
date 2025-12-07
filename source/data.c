@@ -1,9 +1,8 @@
 /**
  * @file data.c
- * @brief Implementação da estrutura de dados data_t e das respetivas funções.
+ * @brief implementacao da struct data_t e funcoes
  *
- * Este ficheiro contém a implementação das funções para criar, destruir,
- * duplicar e substituir dados de um automóvel, conforme definido em data.h.
+ * implementacao funcoes criar destruir duplicar substituir dados carro definidos em data.h
  *
  * Projeto: Sistemas Distribuídos 2025/2026
  * Grupo 44
@@ -17,20 +16,20 @@
 #include "../include/data-private.h"
 
 struct data_t *data_create(int ano, float preco, enum marca_t marca, const char *modelo, enum combustivel_t combustivel) {
-    char *new_modelo = validate_params(ano, preco, marca, modelo, combustivel); // verifica params e faz strdup do modelo
+    char *new_modelo = validate_params(ano, preco, marca, modelo, combustivel); // verifica params e strdup modelo
     if (!new_modelo) {
-        return NULL; // erro ao alocar memória
+        return NULL; // erro a alocar memoria
     }
 
     struct data_t *new_data = (struct data_t *) malloc(sizeof(struct data_t));
     if (!new_data) {
-        return NULL; // erro ao alocar memória
+        return NULL; // erro a alocar memoria
     }
 
     new_data->ano = ano;
     new_data->preco = preco;
     new_data->marca = marca;
-    new_data->modelo = new_modelo; // atribuir a string alocada
+    new_data->modelo = new_modelo; // atribui string alocada
     new_data->combustivel = combustivel;
 
     return new_data;
@@ -38,37 +37,37 @@ struct data_t *data_create(int ano, float preco, enum marca_t marca, const char 
 
 int data_destroy(struct data_t *data) {
     if (!data) {
-        return -1; // passado NULL pointer
+        return -1; // pointer null
     }
-    free(data->modelo); // libertar memória alocada para o modelo
-    free(data); // libertar a estrutura data_t
+    free(data->modelo); // liberta memoria modelo
+    free(data); // liberta struct
     return 0;
 }
 
 struct data_t *data_dup(struct data_t *data) {
     if (!data) {
-        return NULL; // passado NULL pointer
+        return NULL; // pointer null
     }
     return data_create(data->ano, data->preco, data->marca, data->modelo, data->combustivel);
 }
 
 int data_replace(struct data_t *data, int ano, float preco, enum marca_t marca, const char *modelo, enum combustivel_t combustivel) {
     if (!data) {
-        return -1; // passado NULL pointer
+        return -1; // pointer null
     }
 
-    char *new_modelo = validate_params(ano, preco, marca, modelo, combustivel); // verifica params e faz strdup do modelo
+    char *new_modelo = validate_params(ano, preco, marca, modelo, combustivel); // verifica params e strdup modelo
     if (!new_modelo) {
-        return -1; // erro ao alocar memória
+        return -1; // erro a alocar memoria
     }
 
-    // substituir os dados
+    // substitui dados
     data->ano = ano;
     data->preco = preco;
     data->marca = marca;
 
-    free(data->modelo); // libertar a string antiga do modelo
-    data->modelo = new_modelo; // atribuir a nova string
+    free(data->modelo); // liberta string antiga modelo
+    data->modelo = new_modelo; // atribui nova string
 
     data->combustivel = combustivel;
 
@@ -77,20 +76,20 @@ int data_replace(struct data_t *data, int ano, float preco, enum marca_t marca, 
 
 char *validate_params(int ano, float preco, enum marca_t marca, const char *modelo, enum combustivel_t combustivel)
 {
-    if (ano < 1886 || ano > 2100) { // 1886 = primeiro carro (Benz Patent-Motorwagen)
-        return NULL; // ano inválido
+    if (ano < 1886 || ano > 2100) { // 1886 primeiro carro
+        return NULL; // ano invalido
     }
-    if (preco < 0.0f) { // permitir preço 0 (carros oferecidos, etc)
-        return NULL; // preço inválido
+    if (preco < 0.0f) { // preco 0 ok
+        return NULL; // preco invalido
     }
     if (marca < MARCA_TOYOTA || marca > MARCA_MERCEDES) {
-        return NULL; // marca inválida
+        return NULL; // marca invalida
     }
     if (combustivel < COMBUSTIVEL_GASOLINA || combustivel > COMBUSTIVEL_HIBRIDO) {
-        return NULL; // combustível inválido
+        return NULL; // combustivel invalido
     }
     if (!modelo || strlen(modelo) == 0) {
-        return NULL; // modelo inválido
+        return NULL; // modelo invalido
     }
 
     return strdup(modelo);

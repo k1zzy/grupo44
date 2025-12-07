@@ -61,7 +61,7 @@ int zookeeper_create_server_node(zhandle_t *zh, const char *server_ip_port,
 
   if (ret != ZOK) {
     fprintf(stderr, "Error creating server node: %d\n", ret);
-    return -1; // erro criar no
+    return -1; 
   }
 
   printf("Created server node: %s\n", node_path_buffer);

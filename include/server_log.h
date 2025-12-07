@@ -11,21 +11,21 @@
 
 #include "sdmessage.pb-c.h"
 
-/* escrever no server_log os eventos que acontecem no servidor*/
+/* escreve log eventos servidor*/
 void write_log(int timestamp, const char *clientAddressPort, const char *eventType, MessageT__Opcode opcode, MessageT__CType c_type, Data *argument);
 
-/* traduzir opcode para string */
+/* traduz opcode string */
 char *translate_op_code(MessageT__Opcode opcode);
 
-/* traduzir c_type para string */
+/* traduz c_type string */
 char *translate_op_c_type(MessageT__CType c_type);
 
-/* traduzir marca para string */
+/* traduz marca string */
 char *translate_marca(Marca marca);
 
-/* obter o timestamp em segundos */
+/* obtem timestamp segundos */
 int get_seconds();
 
-/* criar string com o formato "IP:PORTA" do cliente */
+/* cria string ip:porta cliente */
 char *make_client_addr_port(int sockfd);
     

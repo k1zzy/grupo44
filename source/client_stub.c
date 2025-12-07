@@ -32,32 +32,32 @@ struct rlist_t *rlist_connect(char *address_port) {
     struct rlist_t *rlist = NULL;
     rlist = malloc(sizeof(struct rlist_t));
     if (!rlist) {
-        return NULL; // se falhou a alocação de memória
+        return NULL; // erro a alocar memoria
     }
-    char *pontos_ptr = strchr(address_port, ':'); // procura o ':'
+    char *pontos_ptr = strchr(address_port, ':'); // procura o :
     if (!pontos_ptr) {
         free(rlist);
-        return NULL; // se nao encontrou o ':', formato inválido
+        return NULL; // sem :, formato invalido
     }
-    size_t ip = pontos_ptr - address_port; // um ptr menos o outro dá o tamanho do server address
-    // +1 para o '\0', temos de fazer assim porque nao sabemos o tamanho do server address
+    size_t ip = pontos_ptr - address_port; // ptr menos outro da tamanho server
+    // +1 pro \0, nao sabemos tamanho
     rlist->server_address = malloc(ip + 1);
     if (!rlist->server_address) {
-        free(rlist); // se falhou a alocação de memória
+        free(rlist); // erro a alocar memoria
         return NULL;
     }
-    strncpy(rlist->server_address, address_port, ip); // por fim, copia o server address
-    rlist->server_address[ip] = '\0'; // adiciona o terminador de string na ultima posição
-    // podemos utilizar atoi porque este para quando encontrar um caracter que nao seja número
+    strncpy(rlist->server_address, address_port, ip); // copia server address
+    rlist->server_address[ip] = '\0'; // mete terminador string no fim
+    // atoi para num char nao numero \0
     // neste caso, o terminator de string '\0'
-    rlist->server_port = atoi(pontos_ptr + 1); // converte a parte do port para int
-    // estabelece ligação com o servidor (dando um socket à rlist)
+    rlist->server_port = atoi(pontos_ptr + 1); // converte porto pa int
+    // liga ao server
     if (network_connect(rlist) < 0) { 
         free(rlist->server_address);
         free(rlist);
         return NULL;
     }
-    // após conectar, espera pela mensagem de status do servidor
+    // depois de ligar espera status server
     uint16_t status_size_network;
     if (read_all(rlist->sockfd, &status_size_network, sizeof(status_size_network)) == -1) {
         network_close(rlist);
@@ -110,22 +110,22 @@ struct rlist_t *rlist_connect(char *address_port) {
 
 int rlist_disconnect(struct rlist_t *rlist) {
     if (!rlist) {
-        return -1; // rlist inválida
+        return -1; // rlist invalida
     }
 
     log_event(rlist, "CLOSE", (MessageT__Opcode)0, (MessageT__CType)0, NULL);
 
-    // fechar a socket se estiver aberta
+    // fecha socket se aberta
     if (rlist->sockfd != -1) {
-        // fechar a socket
+        // fecha socket
         close(rlist->sockfd);
     }
 
-    free(rlist->server_address); // libertar o server address
-    free(rlist); // libertar a estrutura rlist
+    free(rlist->server_address); // liberta server address
+    free(rlist); // liberta estrutura
     return 0;
 }
-// adicionar carro
+// adiciona carro
 int rlist_add(struct rlist_t *rlist, struct data_t *car) {
     if (!rlist || !car) {
         return -1;
@@ -137,11 +137,11 @@ int rlist_add(struct rlist_t *rlist, struct data_t *car) {
 
     Data *pd = malloc(sizeof(Data)); 
 
-    if (!pd) { // se falhou a alocação de memória
+    if (!pd) { // erro a alocar memoria
         return -1;
     }
 
-    // preencher a estrutura Data com os dados do carro
+    // preenche struct data com dados
     data__init(pd);
     pd->ano = car->ano;
     pd->preco = car->preco;
@@ -153,7 +153,7 @@ int rlist_add(struct rlist_t *rlist, struct data_t *car) {
 
     log_event(rlist, "REQUEST", msg.opcode, msg.c_type, msg.data);
 
-    MessageT *resp = network_send_receive(rlist, &msg); // enviar a mensagem e receber a resposta
+    MessageT *resp = network_send_receive(rlist, &msg); // envia msg e recebe resposta
 
     if (pd->modelo) {
         free(pd->modelo);
@@ -165,12 +165,12 @@ int rlist_add(struct rlist_t *rlist, struct data_t *car) {
         return -1;
     }
 
-    // Verificar se a operação foi bem-sucedida (opcode = OP_ADD + 1 = 11)
+    // verifica se deu (opcode 11)
     int result = (resp->opcode == MESSAGE_T__OPCODE__OP_ADD + 1) ? 0 : -1;
     message_t__free_unpacked(resp, NULL);
     return result;
 }
-// remover carro por modelo
+// remove carro modelo
 int rlist_remove_by_model(struct rlist_t *rlist, const char *modelo) {
     if (!rlist || !modelo) return -1;
 
@@ -201,7 +201,7 @@ int rlist_remove_by_model(struct rlist_t *rlist, const char *modelo) {
     /* protocolo: 0 = removed, 1 = not found, -1 = error */
     return out;
 }
-// obter carro por marca
+// obtem carro marca
 struct data_t *rlist_get_by_marca(struct rlist_t *rlist, enum marca_t marca) {
     if (!rlist) return NULL;
 
@@ -224,7 +224,7 @@ struct data_t *rlist_get_by_marca(struct rlist_t *rlist, enum marca_t marca) {
     message_t__free_unpacked(resp, NULL);
     return out;
 }
-// obter carros por ano
+// obtem carros ano
 struct data_t **rlist_get_by_year(struct rlist_t *rlist, int ano) {
     if (!rlist) return NULL;
 
@@ -258,7 +258,7 @@ struct data_t **rlist_get_by_year(struct rlist_t *rlist, int ano) {
     message_t__free_unpacked(resp, NULL);
     return out;
 }
-// ordenar lista por ano
+// ordena lista ano
 int rlist_order_by_year(struct rlist_t *rlist) {
     if (!rlist) return -1;
 
@@ -274,7 +274,7 @@ int rlist_order_by_year(struct rlist_t *rlist) {
     message_t__free_unpacked(resp, NULL);
     return (res == 0) ? 0 : -1;
 }
-// obter tamanho da lista
+// obtem tamanho lista
 int rlist_size(struct rlist_t *rlist) {
     if (!rlist) {
         return -1;
@@ -296,7 +296,7 @@ int rlist_size(struct rlist_t *rlist) {
         
     return size;
 }
-// obter lista de modelos
+// obtem lista modelos
 char **rlist_get_model_list(struct rlist_t *rlist) {
     if (!rlist) {
         return NULL;
@@ -325,14 +325,14 @@ char **rlist_get_model_list(struct rlist_t *rlist) {
     message_t__free_unpacked(resp, NULL);
     return out;
 }
-// libertar lista de modelos
+// liberta lista modelos
 int rlist_free_model_list(char **models) {
     if (!models) {
-        return -1; // models inválido
+        return -1; // models invalido
     }
     for (size_t i = 0; models[i] != NULL; ++i) {
-        free(models[i]); // libertar cada string individualmente
+        free(models[i]); // liberta cada string
     }
-    free(models); // libertar a lista de strings
+    free(models); // liberta lista
     return 0;
 }

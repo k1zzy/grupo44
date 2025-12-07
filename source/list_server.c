@@ -4,7 +4,7 @@
  * (61879)
  */
 
-#include "../include/client_stub.h" // Para rlist_connect e rlist_disconnect
+#include "../include/client_stub.h" // para rlist_connect e rlist_disconnect
 #include "../include/list_skel.h"
 #include "../include/network_server.h"
 #include "../include/zookeeper_utils.h"
@@ -17,7 +17,7 @@
 #include <string.h>
 #include <unistd.h>
 
-// Helper to get local IP
+// obtem ip local
 int get_local_ip(char *buffer, size_t buflen) {
   int sock = socket(AF_INET, SOCK_DGRAM, 0);
   if (sock < 0)
@@ -26,10 +26,10 @@ int get_local_ip(char *buffer, size_t buflen) {
   struct sockaddr_in serv;
   memset(&serv, 0, sizeof(serv));
   serv.sin_family = AF_INET;
-  serv.sin_addr.s_addr = inet_addr("8.8.8.8"); // Google DNS
+  serv.sin_addr.s_addr = inet_addr("8.8.8.8"); // google dns
   serv.sin_port = htons(53);
 
-  // No actual connection used, just route lookup
+  // nao conecta mesmo so ve a route
   if (connect(sock, (const struct sockaddr *)&serv, sizeof(serv)) < 0) {
     close(sock);
     return -1;
@@ -47,7 +47,7 @@ int get_local_ip(char *buffer, size_t buflen) {
   return (p != NULL) ? 0 : -1;
 }
 
-// Variáveis globais para gestão da replicação
+// variaveis globais replicacao
 static zhandle_t *zh = NULL;
 static char my_node_path[512];
 static char *next_server_addr = NULL;
@@ -55,7 +55,7 @@ static struct rlist_t *next_server_conn = NULL;
 static int is_tail = 0;
 
 void sig_term_handler(int signum) {
-  (void)signum; // como nao se usa o parametro, suprime o warning no make
+  (void)signum; // para o warning do make
   printf("\nShutting down server...\n");
   network_server_request_shutdown();
   if (zh) {
@@ -69,12 +69,12 @@ void sig_term_handler(int signum) {
   }
 }
 
-// Função para comparar strings (para qsort)
+// compara strings para o qsort
 int compare_strings(const void *a, const void *b) {
   return strcmp(*(const char **)a, *(const char **)b);
 }
 
-// Callback para mudanças nos filhos de /chain
+// callback mudancas filhos /chain
 void chain_watcher(zhandle_t *zzh, int type, int state, const char *path,
                    void *watcherCtx) {
   (void)state;
@@ -89,14 +89,14 @@ void chain_watcher(zhandle_t *zzh, int type, int state, const char *path,
       return;
     }
 
-    // Ordenar os filhos lexicograficamente
+    // ordena filhos
     qsort(children.data, children.count, sizeof(char *), compare_strings);
 
-    // Encontrar a minha posição
+    // encontra minha posicao
     int my_index = -1;
     char *my_node_name = strrchr(my_node_path, '/');
     if (my_node_name) {
-      my_node_name++; // Avançar a barra
+      my_node_name++; // avanca barra
     } else {
       my_node_name = my_node_path;
     }
@@ -110,11 +110,11 @@ void chain_watcher(zhandle_t *zzh, int type, int state, const char *path,
 
     if (my_index == -1) {
       fprintf(stderr, "Could not find my node in /chain children!\n");
-      // Talvez o nosso nó tenha sido apagado?
+      // talvez o no tenha sido apagado?
     } else {
-      // Verificar sucessor
+      // verifica sucessor
       if (my_index < children.count - 1) {
-        // Tenho sucessor
+        // tenho sucessor
         char next_node_path[512];
         snprintf(next_node_path, sizeof(next_node_path), "/chain/%s",
                  children.data[my_index + 1]);
@@ -128,7 +128,7 @@ void chain_watcher(zhandle_t *zzh, int type, int state, const char *path,
           printf("My successor is %s at %s\n", children.data[my_index + 1],
                  buffer);
 
-          // Se o sucessor mudou, reconectar
+          // se sucessor mudou reconecta
           if (next_server_addr == NULL ||
               strcmp(next_server_addr, buffer) != 0) {
             if (next_server_conn) {
@@ -146,13 +146,13 @@ void chain_watcher(zhandle_t *zzh, int type, int state, const char *path,
                       next_server_addr);
             }
 
-            // Atualizar no network_server (precisamos de uma função para isso)
+            // atualiza no network_server (precisamos funcao para isso)
             network_server_set_successor(next_server_conn);
           }
         }
         is_tail = 0;
       } else {
-        // Sou a cauda
+        // sou a tail
         printf("I am the TAIL.\n");
         if (next_server_conn) {
           rlist_disconnect(next_server_conn);
@@ -167,16 +167,14 @@ void chain_watcher(zhandle_t *zzh, int type, int state, const char *path,
       }
     }
 
-    // Libertar memória da lista de filhos
-    // (A biblioteca ZK pode ter funções específicas para libertar
-    // String_vector, mas geralmente é free no data e struct)
-    // deallocate_String_vector(&children); // Se disponível, senão iterar e
-    // free
+    // liberta memoria lista filhos
+    // (a lib zk pode ter funcoes mas free na struct chega)
+    // se disponivel senao iterar e free
   }
 }
 
 int main(int argc, char *argv[]) {
-  // verificar argumentos
+  // verifica argumentos
   if (argc != 3) {
     printf("Invalid arguments!\n");
     printf("Usage: list-server <zookeeper_ip:port> <server_port>\n");
@@ -186,31 +184,31 @@ int main(int argc, char *argv[]) {
   char *zk_addr = argv[1];
   short port = (short)atoi(argv[2]);
 
-  // se a porta for inválida
+  // se a porta e invalida
   if (port <= 1023) {
     printf("Bad port number\n");
     return -1;
   }
 
-  // handlers de sinais
+  // trata sinais
   struct sigaction act;
-  memset(&act, 0, sizeof(act));      // meter a 0 por segurança
-  act.sa_handler = sig_term_handler; // definir a função handler
-  sigemptyset(&act.sa_mask);         // limpar a máscara de sinais
+  memset(&act, 0, sizeof(act));      // limpa a 0 por seguranca
+  act.sa_handler = sig_term_handler; // define handler
+  sigemptyset(&act.sa_mask);         // limpa mascara sinais
   sigaction(SIGINT, &act, NULL);     // CTRL+C
-  sigaction(SIGTERM, &act, NULL);    // kill command
+  sigaction(SIGTERM, &act, NULL);    // comando kill
 
-  // Ignorar SIGPIPE para não dar crash
+  // ignora sigpipe
   signal(SIGPIPE, SIG_IGN);
 
-  // inicia o servidor de rede
+  // inicia servidor rede
   int listening_socket = network_server_init(port);
   if (listening_socket == -1) {
     printf("Error initializing network \n");
     return -1;
   }
 
-  // abre a lista
+  // abre lista
   struct list_t *list = list_skel_init();
   if (!list) {
     printf("Error initializing list \n");
@@ -218,7 +216,7 @@ int main(int argc, char *argv[]) {
     return -1;
   }
 
-  // Ligar ao ZooKeeper
+  // liga zookeeper
   zh = zookeeper_connect(zk_addr);
   if (!zh) {
     printf("Error connecting to ZooKeeper\n");
@@ -227,13 +225,13 @@ int main(int argc, char *argv[]) {
     return -1;
   }
 
-  // Criar nó /chain se não existir
+  // cria no chain se nao existir
   zookeeper_create_chain_node(zh);
 
-  // Obter o meu IP
+  // obtem meu ip
   char my_ip[64];
   if (get_local_ip(my_ip, sizeof(my_ip)) != 0) {
-    // Fallback to localhost if network fails
+    // fallback localhost se der erro
     strcpy(my_ip, "127.0.0.1");
     fprintf(stderr, "Failed to get real IP, using localhost fallback.\n");
   }
@@ -241,21 +239,21 @@ int main(int argc, char *argv[]) {
   char my_addr[256];
   snprintf(my_addr, sizeof(my_addr), "%s:%d", my_ip, port);
 
-  // Criar o meu nó efémero sequencial
+  // cria no efemero sequencial
   if (zookeeper_create_server_node(zh, my_addr, my_node_path,
                                    sizeof(my_node_path)) != 0) {
     printf("Error creating server node in ZooKeeper\n");
-    // cleanup
+    // limpa
     return -1;
   }
 
-  // Obter filhos e determinar topologia inicial
+  // obtem filhos e ve topologia inicial
   struct String_vector children;
   if (zookeeper_get_children(zh, &children, chain_watcher) == 0) {
-    // Ordenar e verificar
+    // ordena e verifica
     qsort(children.data, children.count, sizeof(char *), compare_strings);
 
-    // Encontrar a minha posição
+    // encontra minha posicao
     int my_index = -1;
     char *my_node_name = strrchr(my_node_path, '/');
     if (my_node_name)
@@ -271,7 +269,7 @@ int main(int argc, char *argv[]) {
     }
 
     if (my_index > 0) {
-      // Tenho antecessor, preciso de sincronizar estado
+      // tenho antecessor preciso sincronizar
       char prev_node_path[512];
       snprintf(prev_node_path, sizeof(prev_node_path), "/chain/%s",
                children.data[my_index - 1]);
@@ -287,13 +285,13 @@ int main(int argc, char *argv[]) {
 
         struct rlist_t *prev_server = rlist_connect(buffer);
         if (prev_server) {
-          // Obter lista completa
+          // obtem lista completa
           struct data_t **all_cars =
-              rlist_get_by_year(prev_server, -1); // -1 para obter todos
+              rlist_get_by_year(prev_server, -1); // -1 para todos
           if (all_cars) {
             for (int k = 0; all_cars[k] != NULL; k++) {
               list_add(list, all_cars[k]);
-              data_destroy(all_cars[k]); // Libertar a cópia recebida
+              data_destroy(all_cars[k]); // liberta copia recebida
             }
             free(all_cars);
           }
@@ -305,17 +303,17 @@ int main(int argc, char *argv[]) {
       }
     }
 
-    // Chamar o watcher logicamente para configurar o sucessor inicial
+    // chama watcher configurar sucessor
     chain_watcher(zh, ZOO_CHILD_EVENT, 0, NULL, NULL);
   }
 
-  // main loop
+  // ciclo principal
   network_main_loop(listening_socket, list);
 
-  // Aguardar que todas as threads terminem
+  // espera threads terminarem
   network_server_join_threads();
 
-  // fechar servidor e destruir lista
+  // fecha servidor e destroi lista
   network_server_close(listening_socket);
   list_skel_destroy(list);
 

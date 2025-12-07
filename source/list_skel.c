@@ -44,12 +44,12 @@ int invoke(MessageT *msg, struct list_t *list) {
             
          Data *pd = msg->data;
             
-            // Duplicar o modelo antes de criar data_t
+            // duplicar modelo antes de criar data_t
             char *modelo_copy = strdup(pd->modelo ? pd->modelo : "");
             if (!modelo_copy) {
                 msg->opcode = MESSAGE_T__OPCODE__OP_ERROR;
                 msg->c_type = MESSAGE_T__C_TYPE__CT_NONE;
-                free(NULL); // matching the binary
+                free(NULL); // igual ao binario
                 return 0;
             }
             
@@ -68,7 +68,7 @@ int invoke(MessageT *msg, struct list_t *list) {
                 return 0;
             }
             
-            // Adicionar à lista
+            // adicionar a lista
             int add_result = list_add(list, car);
             
             if (add_result != 0) {
@@ -101,7 +101,7 @@ int invoke(MessageT *msg, struct list_t *list) {
                 return 0;
             }
             
-            // Alocar e inicializar Data protobuf
+            // alocar e inicializar data protobuf
             Data *pd = malloc(sizeof(Data));
             if (!pd) {
                 msg->opcode = MESSAGE_T__OPCODE__OP_ERROR;
@@ -181,7 +181,7 @@ int invoke(MessageT *msg, struct list_t *list) {
             msg->opcode = MESSAGE_T__OPCODE__OP_GETMODELS + 1; 
             msg->c_type = MESSAGE_T__C_TYPE__CT_MODEL;
             
-            // Contar os modelos
+            // contar modelos
             int count = 0;
             while (model_list[count] != NULL) {
                 count++;
@@ -198,11 +198,11 @@ int invoke(MessageT *msg, struct list_t *list) {
                 return 0;
             }
             
-            // Copiar modelos
+            // copiar modelos
             for (int i = 0; i < count; i++) {
                 msg->models[i] = strdup(model_list[i]);
                 if (!msg->models[i]) {
-                    // Rollback em caso de erro
+                    // rollback se der erro
                     for (int j = 0; j < i; j++) {
                         free(msg->models[j]);
                     }
@@ -229,7 +229,7 @@ int invoke(MessageT *msg, struct list_t *list) {
             
             struct data_t **arr;
             
-            // Se result é -1, ordena e obtém todos; caso contrário, filtra por ano
+            // se result e -1 ordena e saca tudo senao filtra por ano
             if (msg->result == -1) {
                 list_order_by_year(list);
                 arr = list_get_all(list);
@@ -246,7 +246,7 @@ int invoke(MessageT *msg, struct list_t *list) {
             msg->opcode = MESSAGE_T__OPCODE__OP_GETLISTBYTEAR + 1; 
             msg->c_type = MESSAGE_T__C_TYPE__CT_LIST;
             
-            // Contar elementos
+            // contar elementos
             int m = 0;
             while (arr[m] != NULL) {
                 m++;
@@ -262,11 +262,11 @@ int invoke(MessageT *msg, struct list_t *list) {
                 return 0;
             }
             
-            // Converter cada data_t para Data protobuf
+            // converter data_t para data protobuf
             for (int n = 0; n < m; n++) {
                 Data *pd = malloc(sizeof(Data));
                 if (!pd) {
-                    // Rollback
+                    // rollback
                     for (int ii = 0; ii < n; ii++) {
                         free(msg->cars[ii]);
                     }
@@ -286,7 +286,7 @@ int invoke(MessageT *msg, struct list_t *list) {
                 pd->modelo = strdup(arr[n]->modelo);
                 
                 if (!pd->modelo) {
-                    // Rollback incluindo o atual
+                    // rollback com o atual
                     for (int jj = 0; jj <= n; jj++) {
                         if (msg->cars[jj]) {
                             free(msg->cars[jj]);

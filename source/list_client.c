@@ -13,14 +13,14 @@
 #include <string.h>
 #include <unistd.h>
 
-// Variáveis globais
+// variaveis globais
 static struct rlist_t *head_server = NULL;
 static struct rlist_t *tail_server = NULL;
 static zhandle_t *zh = NULL;
 
-// handler de sinais
+// trata sinais
 void sig_term_handler(int signum) {
-  (void)signum; // suprime o warning no make
+  (void)signum; // para o warning do make
   printf("\nDesconectando...\n");
   if (head_server)
     rlist_disconnect(head_server);
@@ -31,12 +31,12 @@ void sig_term_handler(int signum) {
   exit(0);
 }
 
-// Função para comparar strings (para qsort)
+// compara strings para o qsort
 int compare_strings(const void *a, const void *b) {
   return strcmp(*(const char **)a, *(const char **)b);
 }
 
-// Callback para mudanças nos filhos de /chain
+// callback mudancas nos filhos /chain
 void chain_watcher(zhandle_t *zzh, int type, int state, const char *path,
                    void *watcherCtx) {
   (void)state;
@@ -64,10 +64,10 @@ void chain_watcher(zhandle_t *zzh, int type, int state, const char *path,
       return;
     }
 
-    // Ordenar os filhos
+    // ordena filhos
     qsort(children.data, children.count, sizeof(char *), compare_strings);
 
-    // Head é o primeiro, Tail é o último
+    // head e o primeiro tail o ultimo
     char head_path[512];
     char tail_path[512];
     snprintf(head_path, sizeof(head_path), "/chain/%s", children.data[0]);
@@ -78,19 +78,18 @@ void chain_watcher(zhandle_t *zzh, int type, int state, const char *path,
     char tail_addr[1024];
     int len = sizeof(head_addr);
 
-    // Obter endereço do Head
+    // obtem endereco head
     if (zoo_wget(zzh, head_path, NULL, NULL, head_addr, &len, NULL) == ZOK) {
       head_addr[len] = '\0';
       printf("New Head: %s\n", head_addr);
-      // Reconectar se mudou (simplificado: reconecta sempre ou verifica se é o
-      // mesmo) Para simplificar, vamos assumir que o rlist_connect lida com
-      // isso ou reconectamos
+      // reconecta se mudou
+      // assumimos que rlist_connect trata disso
       if (head_server)
         rlist_disconnect(head_server);
       head_server = rlist_connect(head_addr);
     }
 
-    // Obter endereço do Tail
+    // obtem endereco tail
     len = sizeof(tail_addr);
     if (zoo_wget(zzh, tail_path, NULL, NULL, tail_addr, &len, NULL) == ZOK) {
       tail_addr[len] = '\0';
@@ -102,7 +101,7 @@ void chain_watcher(zhandle_t *zzh, int type, int state, const char *path,
   }
 }
 
-// Função auxiliar para imprimir informações do carro
+// imprime info do carro
 void print_car(struct data_t *car) {
   if (!car)
     return;
@@ -132,7 +131,7 @@ void processa_comando(char *linha) {
     return;
   }
 
-  // Operações de escrita -> Head
+  // operacoes escrita -> head
   if (strcmp(comando, "add") == 0) {
     if (!head_server) {
       printf("Error: No connection to Head server.\n");
@@ -156,7 +155,7 @@ void processa_comando(char *linha) {
     int marca = atoi(marca_str);
     int combustivel = atoi(combustivel_str);
 
-    // verificações
+    // verificacoes
     if (ano < 1886 || ano > 2100) {
       printf("Erro: ano deve ser entre 1886 e 2100.\n");
       return;
@@ -174,7 +173,7 @@ void processa_comando(char *linha) {
       return;
     }
 
-    // construir o carro
+    // constroi carro
     struct data_t carro;
     carro.modelo = modelo;
     carro.ano = ano;
@@ -182,14 +181,14 @@ void processa_comando(char *linha) {
     carro.marca = marca;
     carro.combustivel = combustivel;
 
-    // adicionar um carro ao servidor HEAD
+    // adiciona carro ao server head
     if (rlist_add(head_server, &carro) == 0) {
       printf("Carro adicionado com sucesso.\n");
     } else {
       printf("Erro: Não foi possivel adicionar o carro.\n");
     }
   }
-  // remover um carro de um modelo dado -> Head
+  // remove carro por modelo -> head
   else if (strcmp(comando, "remove") == 0) {
     if (!head_server) {
       printf("Error: No connection to Head server.\n");
@@ -209,7 +208,7 @@ void processa_comando(char *linha) {
       printf("Erro: modelo %s não encontrado ou erro ao remover.\n", modelo);
     }
   }
-  // Operações de leitura -> Tail
+  // operacoes leitura -> tail
   else if (strcmp(comando, "get_by_year") == 0) {
     if (!tail_server) {
       printf("Error: No connection to Tail server.\n");
@@ -229,15 +228,15 @@ void processa_comando(char *linha) {
       printf("Erro: Nenhum carro encontrado para o ano %d.\n", ano);
       return;
     }
-    // imprime os carros encontrados
+    // imprime carros encontrados
     for (int i = 0; carros[i] != NULL; i++) {
       print_car(carros[i]);
-      free(carros[i]->modelo); // libertar memoria alocada para o modelo
-      free(carros[i]);         // libertar memoria alocada para a struct data_t
+      free(carros[i]->modelo); // liberta memoria modelo
+      free(carros[i]);         // liberta memoria struct data_t
     }
     free(carros);
   }
-  // obter carro por marca -> Tail
+  // obtem carro por marca -> tail
   else if (strcmp(comando, "get_by_marca") == 0) {
     if (!tail_server) {
       printf("Error: No connection to Tail server.\n");
@@ -260,10 +259,10 @@ void processa_comando(char *linha) {
     }
 
     print_car(carro);
-    free(carro->modelo); // libertar memoria alocada para o modelo
-    free(carro);         // libertar memoria alocada para a struct data_t
+    free(carro->modelo); // liberta memoria modelo
+    free(carro);         // liberta memoria struct data_t
   }
-  // obter lista ordenada de uma ano específico -> Tail
+  // obtem lista ordenada ano -> tail
   else if (strcmp(comando, "get_list_ordered_by_year") == 0) {
     if (!tail_server) {
       printf("Error: No connection to Tail server.\n");
@@ -276,15 +275,15 @@ void processa_comando(char *linha) {
       printf("Erro: Nenhum carro encontrado.\n");
       return;
     }
-    // imprime os carros encontrados
+    // imprime carros encontrados
     for (int i = 0; carros[i] != NULL; i++) {
       print_car(carros[i]);
-      free(carros[i]->modelo); // libertar memoria alocada para o modelo
-      free(carros[i]);         // libertar memoria alocada para a struct data_t
+      free(carros[i]->modelo); // liberta memoria modelo
+      free(carros[i]);         // liberta memoria struct data_t
     }
     free(carros);
   }
-  // tamanho da lista do servidor -> Tail
+  // tamanho lista server -> tail
   else if (strcmp(comando, "size") == 0) {
     if (!tail_server) {
       printf("Error: No connection to Tail server.\n");
@@ -298,7 +297,7 @@ void processa_comando(char *linha) {
       printf("Tamanho da lista: %d\n", size);
     }
   }
-  // obter lista de modelos -> Tail
+  // obtem lista modelos -> tail
   else if (strcmp(comando, "get_model_list") == 0) {
     if (!tail_server) {
       printf("Error: No connection to Tail server.\n");
@@ -311,14 +310,14 @@ void processa_comando(char *linha) {
       printf("Erro: Nenhum modelo encontrado.\n");
       return;
     }
-    // imprime os modelos encontrados
+    // imprime modelos encontrados
     for (int i = 0; modelos[i] != NULL; i++) {
       printf("Modelo: %s\n", modelos[i]);
     }
     rlist_free_model_list(
-        modelos); // libertar memoria alocada para a lista de modelos
+        modelos); // liberta memoria lista modelos
   }
-  // imprime todos os comandos do sistema
+  // imprime comandos sistema
   else if (strcmp(comando, "help") == 0) {
     printf("Comandos disponíveis: \n");
     printf("  add <modelo> <ano> <preco> <marca:0-4> <combustivel:0-3>\n");
@@ -339,15 +338,15 @@ void processa_comando(char *linha) {
 }
 
 int main(int argc, char *argv[]) {
-  // configurar handlers de sinais
+  // configura handlers sinais
   struct sigaction act;
   memset(&act, 0, sizeof(act));
   act.sa_handler = sig_term_handler;
   sigemptyset(&act.sa_mask);
   sigaction(SIGINT, &act, NULL);  // CTRL+C
-  sigaction(SIGTERM, &act, NULL); // kill command
+  sigaction(SIGTERM, &act, NULL); // comando kill
 
-  // ignorar sinais SIGPIPE
+  // ignora sigpipe
   signal(SIGPIPE, SIG_IGN);
 
   if (argc != 2) {
@@ -356,19 +355,19 @@ int main(int argc, char *argv[]) {
     return -1;
   }
 
-  // Conectar ao ZooKeeper
+  // ligar ao zookeeper
   zh = zookeeper_connect(argv[1]);
   if (!zh) {
     fprintf(stderr, "Erro ao conectar ao ZooKeeper\n");
     return -1;
   }
 
-  // Obter filhos e configurar Head/Tail inicial
+  // obtem filhos e configura head/tail inicial
   chain_watcher(zh, ZOO_CHILD_EVENT, 0, NULL, NULL);
 
   printf("Ligado ao ZooKeeper em %s\n", argv[1]);
 
-  // Mostrar comandos disponíveis
+  // mostra comandos disponiveis
   printf("Comandos disponíveis: \n");
   printf("  add <modelo> <ano> <preco> <marca:0-4> <combustivel:0-3>\n");
   printf("  remove <modelo>\n");
@@ -381,7 +380,7 @@ int main(int argc, char *argv[]) {
   printf("  quit\n\n");
 
   char linha[1024];
-  // loop principal de leitura de comandos
+  // loop principal comandos
   while (1) {
     printf("Command: ");
     fflush(stdout);
@@ -391,7 +390,7 @@ int main(int argc, char *argv[]) {
       break;
     }
 
-    // remove o '\n' do final para facilitar comparações
+    // remove o \n do fim
     linha[strcspn(linha, "\n")] = '\0';
 
     // ignora linhas vazias
@@ -399,12 +398,12 @@ int main(int argc, char *argv[]) {
       continue;
     }
 
-    // caso: 'quit'
+    // caso: quit
     if (strcmp(linha, "quit") == 0) {
       break;
     }
 
-    // executa o comando
+    // executa comando
     processa_comando(linha);
   }
 

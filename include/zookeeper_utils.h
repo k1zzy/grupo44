@@ -3,7 +3,7 @@
 
 #include <zookeeper/zookeeper.h>
 
-/* Workaround for missing declarations in some ZK versions/configs */
+/* workaround declaracoes falta algumas versoes zk */
 extern int zoo_create(zhandle_t *zh, const char *path, const char *value,
                       int valuelen, const struct ACL_vector *acl, int flags,
                       char *path_buffer, int path_buffer_len);
@@ -20,41 +20,39 @@ extern int zoo_get(zhandle_t *zh, const char *path, int watch, char *buffer,
                    int *buffer_len, struct Stat *stat);
 
 /**
- * Connects to the ZooKeeper server.
- * @param host_port The ZooKeeper server address (e.g., "127.0.0.1:2181").
- * @return A handle to the ZooKeeper connection, or NULL on failure.
+ * conecta zookeeper
+ * @param host_port endereco server zookeeper (ex 127.0.0.1:2181)
+ * @return handle ligacao zk ou null falha
  */
 // liga ao zookeeper
 zhandle_t *zookeeper_connect(const char *host_port);
 
 /**
- * Creates the root chain node (/chain) if it doesn't exist.
- * @param zh The ZooKeeper handle.
- * @return 0 on success, -1 on failure.
+ * cria no root chain (/chain) se nao existir
+ * @param zh handle zk
+ * @return 0 sucesso -1 falha
  */
 // cria o no principal
 int zookeeper_create_chain_node(zhandle_t *zh);
 
 /**
- * Creates an ephemeral sequential node for a server under /chain.
- * @param zh The ZooKeeper handle.
- * @param server_ip_port The IP:Port string of the server to be stored in the
- * node.
- * @param node_path_buffer Buffer to store the created node path (e.g.,
- * "/chain/node-0000000001").
- * @param buffer_len Size of the buffer.
- * @return 0 on success, -1 on failure.
+ * cria no efemero sequencial para server em /chain
+ * @param zh handle zk
+ * @param server_ip_port string ip:port server para guardar no no
+ * @param node_path_buffer buffer para guardar path no criado (ex /chain/node-0000000001)
+ * @param buffer_len tamanho buffer
+ * @return 0 sucesso -1 falha
  */
 // regista o servidor
 int zookeeper_create_server_node(zhandle_t *zh, const char *server_ip_port,
                                  char *node_path_buffer, int buffer_len);
 
 /**
- * Gets the list of children of /chain and sets a watcher.
- * @param zh The ZooKeeper handle.
- * @param children Structure to store the list of children.
- * @param watcher_ctx Context to be passed to the watcher function.
- * @return 0 on success, -1 on failure.
+ * obtem lista filhos /chain e mete watcher
+ * @param zh handle zk
+ * @param children estrutura para guardar lista filhos
+ * @param watcher_ctx contexto para funcao watcher
+ * @return 0 sucesso -1 falha
  */
 // ve quem sao os filhos
 int zookeeper_get_children(zhandle_t *zh, struct String_vector *children,

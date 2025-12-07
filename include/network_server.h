@@ -10,52 +10,49 @@
 #include "list.h"
 #include "sdmessage.pb-c.h"
 
-/* Função para preparar um socket de receção de pedidos de ligação
- * num determinado porto.
- * Retorna o descritor do socket ou -1 em caso de erro.
+/* funcao prepara socket rececao pedidos ligacao porto
+ * retorna descritor socket ou -1 erro
  */
 int network_server_init(short port);
 
-/* A função network_main_loop() deve:
- * - Aceitar uma conexão de um cliente;
- * - Receber uma mensagem usando a função network_receive;
- * - Entregar a mensagem de-serializada ao skeleton para ser processada
-     na lista;
- * - Esperar a resposta do skeleton;
- * - Enviar a resposta ao cliente usando a função network_send.
- * A função não deve retornar, a menos que ocorra algum erro. Nesse
- * caso retorna -1.
+/* ciclo principal rede:
+ * - aceita conexao cliente
+ * - recebe mensagem network_receive
+ * - entrega mensagem deserializada skeleton processar
+ * - espera resposta skeleton
+ * - envia resposta cliente network_send
+ * nao deve retornar a menos que erro (-1)
  */
 int network_main_loop(int listening_socket, struct list_t *list);
 
-/* A função network_receive() deve:
- * - Ler os bytes da rede, a partir do client_socket indicado;
- * - De-serializar estes bytes e construir a mensagem com o pedido,
- *   reservando a memória necessária para a estrutura MessageT.
- * Retorna a mensagem com o pedido ou NULL em caso de erro.
+/* recebe mensagem:
+ * - lee bytes rede client_socket
+ * - deserializa bytes e constroi mensagem pedido
+ *   reservando memoria messaget
+ * retorna mensagem pedido ou null erro
  */
 MessageT *network_receive(int client_socket);
 
-/* A função network_send() deve:
- * - Serializar a mensagem de resposta contida em msg;
- * - Enviar a mensagem serializada, através do client_socket.
- * Retorna 0 (OK) ou -1 em caso de erro.
+/* envia mensagem:
+ * - serializa mensagem resposta msg
+ * - envia mensagem serializada client_socket
+ * retorna 0 ok ou -1 erro
  */
 int network_send(int client_socket, MessageT *msg);
 
-/* Liberta os recursos alocados por network_server_init(), nomeadamente
- * fechando o socket passado como argumento.
- * Retorna 0 (OK) ou -1 em caso de erro.
+/* liberta recursos network_server_init()
+ * fechar socket
+ * retorna 0 ok ou -1 erro
  */
 int network_server_close(int socket);
 
-/* Sinaliza término e fecha FDs internos (desbloqueia accept/read)*/
+/* sinaliza termino e fecha fds internos (desbloqueia accept/read)*/
 void network_server_request_shutdown(void);
 
-/* Aguarda que todas as threads terminem e liberta recursos auxiliares */
+/* espera threads terminarem e liberta recursos aux */
 void network_server_join_threads(void);
 
-/* Define o servidor sucessor para propagação de escrita */
+/* define server sucessor propagacao escrita */
 // void network_server_set_successor(struct rlist_t *successor);
 
 #endif

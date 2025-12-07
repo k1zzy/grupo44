@@ -14,33 +14,32 @@
 
 int network_connect(struct rlist_t *rlist) {
     if (!rlist) {
-        return -1; // rlist inválida
+        return -1; // rlist invalida
     }
 
-    // criar o socket
+    // cria socket
     int sockfd = socket(AF_INET, SOCK_STREAM, 0);
     if (sockfd < 0) {
-        return -1; // erro ao criar o socket
+        return -1; // erro a criar socket
     }
 
-    // configurar o endereço do servidor
-    struct sockaddr_in serv_addr; // estrutura para o endereço do servidor
-    memset(&serv_addr, 0, sizeof(serv_addr)); // limpar a estrutura por precaução
-    serv_addr.sin_family = AF_INET; // definir como ipv4
-    serv_addr.sin_port = htons(rlist->server_port); // converter a porta para network byte order
-    if (inet_pton(AF_INET, rlist->server_address, &serv_addr.sin_addr) <= 0) { // converter o IP
+    // configura endereco server
+    struct sockaddr_in serv_addr; // estrutura endereco server
+    memset(&serv_addr, 0, sizeof(serv_addr)); // limpa struct
+    serv_addr.sin_family = AF_INET; // define ipv4
+    serv_addr.sin_port = htons(rlist->server_port); // converte porta network order
+    if (inet_pton(AF_INET, rlist->server_address, &serv_addr.sin_addr) <= 0) { // converte ip
         close(sockfd);
-        return -1; // erro ao converter o IP
+        return -1; // erro a converter ip
     }
 
-    // estabelecer a ligação com o servidor
+    // liga ao server
     if (connect(sockfd, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0) {
         close(sockfd);
-        return -1; // erro ao conectar ao servidor
+        return -1; // erro a conectar
     }
 
-    // guardar a socket na estrutura rlist
-    rlist->sockfd = sockfd;
+    rlist->sockfd = sockfd; // guarda socket rlist
 
     return 0; 
 }
@@ -48,22 +47,22 @@ int network_connect(struct rlist_t *rlist) {
 
 MessageT *network_send_receive(struct rlist_t *rlist, MessageT *msg) {
     if (!rlist || !msg) {
-        return NULL; // rlist ou msg inválidos
+        return NULL; // rlist ou msg invalidos
     }
 
-    // obter o socket da rlist
+    // obtem socket rlist
     int socket = rlist->sockfd;
 
     size_t msg_size = message_t__get_packed_size(msg);
-    uint8_t *buffer = malloc(msg_size); // 16 para o tamanho do short
+    uint8_t *buffer = malloc(msg_size); // aloca buffer
 
     if (!buffer) {
-        return NULL; // erro ao alocar memória
+        return NULL; // erro a alocar memoria
     }
-    // Serializa a mensagem
+    // serializa msg
     message_t__pack(msg, buffer);
 
-    // Envia o tamanho da mensagem serializada para o servidor
+    // envia tamanho msg serializada
     uint16_t network_msg_size = htons((uint16_t)msg_size);
     if (write_all(socket, &network_msg_size, sizeof(network_msg_size)) == -1) {
         free(buffer);
@@ -71,47 +70,47 @@ MessageT *network_send_receive(struct rlist_t *rlist, MessageT *msg) {
     }
 
 
-    // Envia a mensagem serializada para o servidor
+    // envia msg serializada
     if (write_all(socket, buffer, msg_size) == -1) {
         free(buffer);
         return NULL;
     }
-    free(buffer); // libera o buffer após o envio
+    free(buffer); // liberta buffer
 
-    // recebe o tamanho da resposta do servidor
+    // recebe tamanho resposta
     uint16_t response_size_network;
     if (read_all(socket, &response_size_network, sizeof(response_size_network)) == -1) {
         return NULL;
     }
     uint16_t response_size = ntohs(response_size_network);
 
-    // Aloca memória para o tamanho da resposta
+    // aloca memoria resposta
     uint8_t *response_buffer = malloc(response_size);
     if (!response_buffer) {
         return NULL;
     }
-    // Recebe a resposta do servidor
+    // recebe resposta
     if (read_all(socket, response_buffer, response_size) == -1) {
-        free(response_buffer); // se houver um erro ao ler a mensagem, libera o buffer
+        free(response_buffer); // erro a ler liberta buffer
         return NULL;
     }
 
     MessageT *response_msg = message_t__unpack(NULL, response_size, response_buffer);
-    free(response_buffer); // libera o buffer de resposta após a deserialização
+    free(response_buffer); // liberta buffer resposta
 
-    return response_msg; // return the de-serialized message
+    return response_msg; // devolve msg deserializada
 
 }
 
 int network_close(struct rlist_t *rlist) {
     if (!rlist) {
-        return -1; // rlist inválida
+        return -1; // rlist invalida
     }
 
-    // fechar a socket
+    // fecha socket
     if (rlist->sockfd != -1) {
         close(rlist->sockfd);
-        rlist->sockfd = -1; // marcar como fechada
+        rlist->sockfd = -1; // marca fechada
     }
 
     return 0;
